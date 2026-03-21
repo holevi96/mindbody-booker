@@ -14,7 +14,7 @@ jobs:
 
       - name: Várakozás és foglalás indítása
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MY_PAT }}
           REPO:     ${{ github.repository }}
         run: |
           echo "Watcher elindult. Olvasom a schedule.json-t..."
