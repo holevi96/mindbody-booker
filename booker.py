@@ -125,39 +125,39 @@ def get_csrf_and_book_url(page, class_id: str) -> tuple[str, str] | tuple[None, 
 
 def book(page, csrf: str, res_deb_path: str) -> bool:
     """
-    Elvégzi a tényleges foglalást.
+    Elvégzi a tényleges foglalást a frmRecRes form elküldésével.
     """
     log.info("Foglalás elküldése...")
 
-    # A legegyszerűbb: kattintsunk a már megtalált gombra
-    btn = page.query_selector("input.actionButton[onclick*='res_deb']")
-    if btn:
-        btn.click()
-        try:
-            page.wait_for_load_state("domcontentloaded", timeout=15_000)
-        except PWTimeout:
-            pass
+    # A res_a oldalon vagyunk, elküldjük a formot JS-en keresztül
+    # pontosan úgy ahogy a gomb onclick-je tenné
+    page.evaluate(f"""
+        document.querySelector('input[name="CSRFToken"]').value = '{csrf}';
+        document.frmRecRes.action = '{res_deb_path}';
+        document.frmRecRes.submit();
+    """)
 
-        url = page.url
-        content = page.content()
-        success = (
-            "my_sch" in url
-            or "receipt" in url.lower()
-            or "Foglalt" in content
-            or "Reserved" in content
-            or "confirmed" in content.lower()
-        )
-        log.info(
-            "Foglalás %s (url=%s)",
-            "SIKERES ✅" if success else "SIKERTELEN ❌", url
-        )
-        if not success:
-            # Extra info a hibakereséshez
-            log.info("Oldal tartalom (első 300 kar): %s", content[:300])
-        return success
+    try:
+        page.wait_for_load_state("domcontentloaded", timeout=15_000)
+    except PWTimeout:
+        pass
 
-    log.error("Foglalás gomb nem található a res_a oldalon!")
-    return False
+    url = page.url
+    content = page.content()
+    success = (
+        "my_sch" in url
+        or "receipt" in url.lower()
+        or "Foglalt" in content
+        or "Reserved" in content
+        or "confirmed" in content.lower()
+    )
+    log.info(
+        "Foglalás %s (url=%s)",
+        "SIKERES ✅" if success else "SIKERTELEN ❌", url
+    )
+    if not success:
+        log.info("Oldal tartalom (első 500 kar): %s", content[:500])
+    return success
 
 
 def run():
