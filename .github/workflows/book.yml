@@ -10,7 +10,7 @@ on:
         description: "Óra neve (pl. TRX köredzés)"
         required: true
       class_date:
-        description: "Dátum (pl. 3/25/2026)"
+        description: "Dátum (pl. 25/03/2026)"
         required: true
       location:
         description: "Helyszín ID (alapértelmezett: 2)"
