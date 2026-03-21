@@ -110,11 +110,23 @@
     <label>GitHub token</label>
     <input type="password" id="gh_token" placeholder="ghp_...">
     <p class="hint">
-      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">Létrehozás →</a>
-      &nbsp;Actions + Contents: Read & write jogosultság kell
+      <a href="https://github.com/settings/tokens/new" target="_blank">Létrehozás →</a>
+      &nbsp;workflow scope kell
     </p>
     <label>GitHub repó</label>
     <input type="text" id="gh_repo" placeholder="felhasználónév/mindbody-booker">
+
+    <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #eee;">
+      <div class="card-title" style="margin-bottom: 0.75rem;">Mindbody fiók</div>
+      <label>Email</label>
+      <input type="email" id="mb_email" placeholder="pelda@email.com">
+      <label>Jelszó</label>
+      <input type="password" id="mb_password" placeholder="••••••••">
+      <label>Studio ID</label>
+      <input type="text" id="mb_studio_id" placeholder="pl. 48016">
+      <p class="hint">Az URL-ből: clients.mindbodyonline.com/...?studioid=XXXXX</p>
+    </div>
+
     <button class="btn btn-secondary" onclick="saveSettings()" style="margin-top:1rem;">
       Beállítások mentése
     </button>
@@ -124,11 +136,14 @@
 <script>
   // Beállítások betöltése
   const saved = JSON.parse(localStorage.getItem('mb_settings') || '{}');
-  if (saved.token)      document.getElementById('gh_token').value    = saved.token;
-  if (saved.repo)       document.getElementById('gh_repo').value     = saved.repo;
-  if (saved.instructor) document.getElementById('instructor').value  = saved.instructor;
-  if (saved.class_name) document.getElementById('class_name').value  = saved.class_name;
-  if (saved.location)   document.getElementById('location').value    = saved.location;
+  if (saved.token)      document.getElementById('gh_token').value      = saved.token;
+  if (saved.repo)       document.getElementById('gh_repo').value       = saved.repo;
+  if (saved.instructor) document.getElementById('instructor').value    = saved.instructor;
+  if (saved.class_name) document.getElementById('class_name').value    = saved.class_name;
+  if (saved.location)   document.getElementById('location').value      = saved.location;
+  if (saved.mb_email)      document.getElementById('mb_email').value      = saved.mb_email;
+  if (saved.mb_password)   document.getElementById('mb_password').value   = saved.mb_password;
+  if (saved.mb_studio_id)  document.getElementById('mb_studio_id').value  = saved.mb_studio_id;
   if (saved.token || saved.repo)
     document.getElementById('settings-saved').style.display = 'inline-block';
 
@@ -150,11 +165,14 @@
 
   function saveSettings() {
     const s = {
-      token:      document.getElementById('gh_token').value.trim(),
-      repo:       document.getElementById('gh_repo').value.trim(),
-      instructor: document.getElementById('instructor').value.trim(),
-      class_name: document.getElementById('class_name').value.trim(),
-      location:   document.getElementById('location').value.trim(),
+      token:         document.getElementById('gh_token').value.trim(),
+      repo:          document.getElementById('gh_repo').value.trim(),
+      instructor:    document.getElementById('instructor').value.trim(),
+      class_name:    document.getElementById('class_name').value.trim(),
+      location:      document.getElementById('location').value.trim(),
+      mb_email:      document.getElementById('mb_email').value.trim(),
+      mb_password:   document.getElementById('mb_password').value,
+      mb_studio_id:  document.getElementById('mb_studio_id').value.trim(),
     };
     localStorage.setItem('mb_settings', JSON.stringify(s));
     document.getElementById('settings-saved').style.display = 'inline-block';
@@ -170,8 +188,15 @@
     const location   = document.getElementById('location').value.trim();
     const runAt      = document.getElementById('run_at').value;
 
+    const mb_email     = document.getElementById('mb_email').value.trim();
+    const mb_password  = document.getElementById('mb_password').value;
+    const mb_studio_id = document.getElementById('mb_studio_id').value.trim();
+
     if (!token || !repo || !instructor || !className || !classDate || !runAt) {
       showStatus('err', 'Kérlek tölts ki minden mezőt!'); return;
+    }
+    if (!mb_email || !mb_password || !mb_studio_id) {
+      showStatus('err', 'Add meg a Mindbody fiók adatait a Beállításokban!'); return;
     }
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(classDate)) {
       showStatus('err', 'A dátum formátuma: nap/hónap/év — pl. 30/03/2026'); return;
@@ -184,26 +209,14 @@
     const runAtISO = new Date(runAt).toISOString();
 
     try {
-      // 1. schedule.json fájl írása a repóba
+      // 1. config.json mentése (Mindbody adatok)
+      const configData = { mb_email, mb_password, mb_studio_id };
+      await saveFile(owner, repoName, token, 'config.json', configData, 'Mindbody konfig frissítve');
+
+      // 2. schedule.json mentése
       const scheduleData = { instructor, class_name: className, class_date: classDate, location, run_at: runAtISO };
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(scheduleData, null, 2))));
-
-      // Meglévő fájl SHA lekérése (ha van)
-      let sha = null;
-      const getRes = await ghFetch(`repos/${owner}/${repoName}/contents/schedule.json`, token);
-      if (getRes.ok) {
-        const existing = await getRes.json();
-        sha = existing.sha;
-      }
-
-      const putBody = { message: `Foglalás ütemezve: ${classDate} – ${instructor}`, content };
-      if (sha) putBody.sha = sha;
-
-      const putRes = await ghFetch(`repos/${owner}/${repoName}/contents/schedule.json`, token, 'PUT', putBody);
-      if (!putRes.ok) {
-        const e = await putRes.json();
-        showStatus('err', `Fájl mentési hiba: ${e.message}`); return;
-      }
+      // 3. schedule.json mentése
+      await saveFile(owner, repoName, token, 'schedule.json', scheduleData, `Foglalás ütemezve: ${classDate} – ${instructor}`);
 
       // 2. Watcher workflow elindítása
       const dispatchRes = await ghFetch(
@@ -229,6 +242,20 @@
       showStatus('err', `Hálózati hiba: ${e.message}`);
     } finally {
       document.getElementById('scheduleBtn').disabled = false;
+    }
+  }
+
+  async function saveFile(owner, repo, token, filename, data, message) {
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    let sha = null;
+    const getRes = await ghFetch(`repos/${owner}/${repo}/contents/${filename}`, token);
+    if (getRes.ok) sha = (await getRes.json()).sha;
+    const body = { message, content };
+    if (sha) body.sha = sha;
+    const putRes = await ghFetch(`repos/${owner}/${repo}/contents/${filename}`, token, 'PUT', body);
+    if (!putRes.ok) {
+      const e = await putRes.json();
+      throw new Error(`${filename} mentési hiba: ${e.message}`);
     }
   }
 
