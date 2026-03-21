@@ -131,16 +131,12 @@ def book(page, csrf: str, res_deb_path: str) -> bool:
 
     # A res_a oldalon vagyunk, elküldjük a formot JS-en keresztül
     # pontosan úgy ahogy a gomb onclick-je tenné
-    page.evaluate(f"""
-        document.querySelector('input[name="CSRFToken"]').value = '{csrf}';
-        document.frmRecRes.action = '{res_deb_path}';
-        document.frmRecRes.submit();
-    """)
-
-    try:
-        page.wait_for_load_state("domcontentloaded", timeout=15_000)
-    except PWTimeout:
-        pass
+    with page.expect_navigation(timeout=15_000, wait_until="domcontentloaded"):
+        page.evaluate(f"""
+            document.querySelector('input[name="CSRFToken"]').value = '{csrf}';
+            document.frmRecRes.action = '{res_deb_path}';
+            document.frmRecRes.submit();
+        """)
 
     url = page.url
     content = page.content()
