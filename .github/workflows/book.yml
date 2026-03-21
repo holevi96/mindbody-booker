@@ -10,7 +10,7 @@ on:
         description: "Óra neve (pl. TRX köredzés)"
         required: true
       class_date:
-        description: "Dátum (pl. 3/30/2026)"
+        description: "Dátum (pl. 3/25/2026)"
         required: true
       location:
         description: "Helyszín ID (alapértelmezett: 2)"
@@ -32,14 +32,25 @@ jobs:
           python-version: "3.11"
 
       - name: Függőségek telepítése
-        run: pip install requests beautifulsoup4
+        run: |
+          pip install playwright beautifulsoup4
+          playwright install chromium
+          playwright install-deps chromium
 
       - name: Futtatás
         env:
-          MB_COOKIES:     ${{ secrets.MB_COOKIES }}
-          MB_STUDIO_ID:   ${{ secrets.MB_STUDIO_ID }}
-          MB_INSTRUCTOR:  ${{ github.event.inputs.instructor }}
-          MB_CLASS:       ${{ github.event.inputs.class_name }}
-          MB_CLASS_DATE:  ${{ github.event.inputs.class_date }}
-          MB_LOCATION:    ${{ github.event.inputs.location }}
+          MB_EMAIL:      ${{ secrets.MB_EMAIL }}
+          MB_PASSWORD:   ${{ secrets.MB_PASSWORD }}
+          MB_STUDIO_ID:  ${{ secrets.MB_STUDIO_ID }}
+          MB_INSTRUCTOR: ${{ github.event.inputs.instructor }}
+          MB_CLASS:      ${{ github.event.inputs.class_name }}
+          MB_CLASS_DATE: ${{ github.event.inputs.class_date }}
+          MB_LOCATION:   ${{ github.event.inputs.location }}
         run: python booker.py
+
+      - name: Screenshot feltöltése hiba esetén
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-screenshot
+          path: error.png
