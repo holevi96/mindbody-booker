@@ -59,6 +59,14 @@ def find_class(s: requests.Session):
     soup = BeautifulSoup(r.text, "html.parser")
     rows = soup.select(".row")
 
+    log.info("Találat: %d sor az órarendben.", len(rows))
+    # Debug: első sor szövege
+    if rows:
+        log.info("Első sor szövege: %s", rows[0].get_text(" ", strip=True)[:100])
+    # Debug: összes edző neve az oldalon
+    instructors = [a.get_text(strip=True) for a in soup.select("a.modalBio")]
+    log.info("Edzők az oldalon: %s", list(set(instructors))[:10])
+
     for row in rows:
         # Ellenőrizzük az edző nevét és az óra nevét
         text = row.get_text(" ", strip=True)
