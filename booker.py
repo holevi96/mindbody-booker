@@ -1,202 +1,225 @@
 """
-Mindbody automatikus időpontfoglaló
+Mindbody automatikus időpontfoglaló – Playwright alapú
 """
-import os, sys, time, json, logging
-from datetime import datetime
-import requests
-from bs4 import BeautifulSoup
+import os, sys, time, logging
+from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger(__name__)
 
-BASE    = "https://clients.mindbodyonline.com"
-STUDIO  = os.environ["MB_STUDIO_ID"]        # pl. 48016
-INSTR   = os.environ["MB_INSTRUCTOR"]       # pl. "Ujvári Cili"
-CLASS   = os.environ["MB_CLASS"]            # pl. "TRX köredzés"
-DATE    = os.environ["MB_CLASS_DATE"]       # pl. "3/30/2026"
-LOC     = os.environ.get("MB_LOCATION", "2")
-TG      = os.environ.get("MB_TG", "23")
-# Cookie-k JSON stringként: '{"ASP.NET_SessionId":"xxx","idsrvauth":"yyy",...}'
-COOKIES_JSON = os.environ["MB_COOKIES"]
+BASE       = "https://clients.mindbodyonline.com"
+STUDIO_ID  = os.environ["MB_STUDIO_ID"]   # 48016
+EMAIL      = os.environ["MB_EMAIL"]
+PASSWD     = os.environ["MB_PASSWORD"]
+INSTR      = os.environ["MB_INSTRUCTOR"]  # pl. "Ujvári Cili"
+CLASS      = os.environ["MB_CLASS"]       # pl. "TRX köredzés"
+DATE       = os.environ["MB_CLASS_DATE"]  # pl. "3/25/2026"
+LOC        = os.environ.get("MB_LOCATION", "2")
+TG         = os.environ.get("MB_TG", "23")
+MAX_TRIES  = int(os.environ.get("MB_MAX_TRIES", "40"))
+RETRY_SEC  = int(os.environ.get("MB_RETRY_SEC", "30"))
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/145.0.0.0 Safari/537.36",
-    "Accept-Language": "hu-HU,hu;q=0.9,en-US;q=0.8,en;q=0.7",
-}
 
-def setup_session() -> requests.Session:
-    """Cookie-kat tölt be a környezeti változóból."""
-    s = requests.Session()
-    cookies = json.loads(COOKIES_JSON)
-    for k, v in cookies.items():
-        s.cookies.set(k, v, domain="clients.mindbodyonline.com")
-    log.info("Session beállítva %d cookie-val.", len(cookies))
-    return s
+def login(page) -> bool:
+    log.info("Bejelentkezés...")
+    page.goto(
+        f"{BASE}/ASP/su1.asp?studioid={STUDIO_ID}",
+        wait_until="domcontentloaded"
+    )
+    # Email + jelszó mezők kitöltése
+    page.fill("input#su1UserName", EMAIL)
+    page.fill("input#su1Password", PASSWD)
+    page.click("input#btnSu1Login")
 
-def find_class(s: requests.Session):
+    try:
+        # Sikeres login után az oldal átirányít
+        page.wait_for_url(f"**/{STUDIO_ID}**", timeout=15_000)
+    except PWTimeout:
+        pass
+
+    # Ellenőrzés: be vagyunk-e lépve
+    ok = "idsrvauth" in {c["name"] for c in page.context.cookies()}
+    log.info("Login %s", "OK ✅" if ok else "FAILED ❌")
+    return ok
+
+
+def find_class(page) -> str | None:
     """
-    Lekéri az órarendet és megkeresi az adott óra SignupButton URL-jét.
+    Lekéri az órarendet és megkeresi az adott óra SignupButton-ját.
     Visszaadja a classId-t ha megtalálta, None-t ha még nem foglalható.
     """
-    data = {
-        "pageNum": "1",
-        "requiredtxtUserName": "", "requiredtxtPassword": "",
-        "optForwardingLink": "", "optRememberMe": "",
-        "tabID": "7", "optView": "week", "useClassLogic": "true",
-        "filterByClsSch": "", "prevFilterByClsSch": "-1",
-        "prevFilterByClsSch2": "-2",
-        "txtDate": DATE,
-        "optLocation": LOC,
-        "optVT": "0", "optInstructor": "0",  # minden edző, majd mi szűrünk
-    }
-    r = s.post(
-        f"{BASE}/classic/mainclass",
-        data=data,
-        headers={**HEADERS, "Referer": f"{BASE}/classic/mainclass"},
-    )
-    log.info("mainclass response: status=%s url=%s", r.status_code, r.url)
-    log.info("mainclass response body (első 500 kar): %s", r.text[:500])
+    log.info("Órarend lekérése (dátum: %s)...", DATE)
+    page.goto(f"{BASE}/classic/mainclass", wait_until="domcontentloaded")
 
-    soup = BeautifulSoup(r.text, "html.parser")
-    rows = soup.select(".row")
+    # Dátum beállítása és szűrés
+    page.evaluate(f"""
+        document.querySelector('input[name="txtDate"]').value = '{DATE}';
+        document.querySelector('select[name="optLocation"]').value = '{LOC}';
+        document.querySelector('form[name="search2"]').submit();
+    """)
+    page.wait_for_load_state("domcontentloaded")
 
-    log.info("Találat: %d sor az órarendben.", len(rows))
-    # Debug: első sor szövege
-    if rows:
-        log.info("Első sor szövege: %s", rows[0].get_text(" ", strip=True)[:100])
-    # Debug: összes edző neve az oldalon
-    instructors = [a.get_text(strip=True) for a in soup.select("a.modalBio")]
-    log.info("Edzők az oldalon: %s", list(set(instructors))[:10])
+    # Összes sor a táblázatban
+    rows = page.query_selector_all(".row")
+    log.info("%d sor az órarendben.", len(rows))
 
     for row in rows:
-        # Ellenőrizzük az edző nevét és az óra nevét
-        text = row.get_text(" ", strip=True)
+        text = row.inner_text()
         if INSTR not in text or CLASS not in text:
             continue
 
-        # Megvan a sor – van-e SignupButton?
-        btn = row.select_one("input.SignupButton")
+        log.info("Óra megtalálva: %s", text[:80].replace("\n", " "))
+
+        btn = row.query_selector("input.SignupButton")
         if not btn:
-            log.info("Óra megtalálva, de a foglalás még nem nyílt meg.")
+            log.info("Foglalás még nem nyílt meg.")
             return None
 
-        # Kinyerjük a classId-t az onclick attribútumból
-        onclick = btn.get("onclick", "")
-        # onclick = "...classId=11074&classDate=..."
+        onclick = btn.get_attribute("onclick") or ""
         for part in onclick.split("&"):
             if "classId=" in part:
-                class_id = part.split("classId=")[1].split("&")[0].strip("'\"")
+                class_id = part.split("classId=")[1].split("'")[0].split("&")[0]
                 log.info("SignupButton megtalálva! classId=%s", class_id)
                 return class_id
 
-    log.info("Az óra nem szerepel az órarenden (dátum: %s).", DATE)
+    log.info("Az óra nem szerepel az órarenden.")
     return None
 
-def get_csrf(s: requests.Session, class_id: str) -> tuple[str, str]:
+
+def get_csrf_and_book_url(page, class_id: str) -> tuple[str, str] | tuple[None, None]:
     """
-    Lekéri a res_a.asp oldalt és kinyeri a CSRF tokent + res_deb URL-t.
+    Megnyitja a res_a.asp oldalt és kinyeri a CSRF tokent + res_deb URL-t.
     """
     url = f"{BASE}/ASP/res_a.asp?tg={TG}&classId={class_id}&classDate={DATE}&clsLoc={LOC}"
-    r = s.get(url, headers={**HEADERS, "Referer": f"{BASE}/classic/mainclass"})
-    soup = BeautifulSoup(r.text, "html.parser")
+    log.info("res_a.asp megnyitása: %s", url)
+    page.goto(url, wait_until="domcontentloaded")
 
-    csrf = soup.select_one("input.csrf-token")
+    csrf = page.query_selector("input.csrf-token")
     if not csrf:
-        log.error("CSRF token nem található a res_a oldalon!")
+        log.error("CSRF token nem található!")
         return None, None
-    csrf_val = csrf["value"]
+    csrf_val = csrf.get_attribute("value")
 
-    # res_deb URL kinyerése a Foglalás gomb onclick-jéből
-    btn = soup.select_one("input.actionButton[onclick*='res_deb']")
+    btn = page.query_selector("input.actionButton[onclick*='res_deb']")
     if not btn:
         log.error("Foglalás gomb nem található!")
         return csrf_val, None
 
-    onclick = btn.get("onclick", "")
+    onclick = btn.get_attribute("onclick") or ""
     # submitResForm('res_deb.asp?classID=...', false, false)
     start = onclick.find("'") + 1
-    end = onclick.find("'", start)
+    end   = onclick.find("'", start)
     res_deb_path = onclick[start:end]
 
-    log.info("CSRF: %s, res_deb: %s", csrf_val, res_deb_path)
+    log.info("CSRF: %s", csrf_val)
+    log.info("res_deb path: %s", res_deb_path)
     return csrf_val, res_deb_path
 
-def book(s: requests.Session, csrf: str, res_deb_path: str) -> bool:
-    """
-    Elvégzi a tényleges foglalást a res_deb.asp-n.
-    """
-    url = f"{BASE}/ASP/{res_deb_path}"
-    data = {
-        "CSRFToken": csrf,
-        "courseID": "", "firstLoad": "false",
-        "frmEnrollClientID": "", "courseid": "",
-        "frmRtnScreen": "res_a",
-        "frmRtnAction": f"res_a.asp?classDate={DATE}&rtnScreen2=cls_list&paid=true",
-        "frmUsePmtPlan": "",
-        "frmRtnScreen2": "cls_list",
-        "lastClientID": "",
-        "optReservedFor": "", "optPaidForOther": "", "OptSelf": "",
-        "txtResNotes": "",
-        "optRecNum": "1", "optRecType": "1",
-        "optDay7": "on",
-        "txtSDate": DATE, "txtEDate": DATE,
-        "rec": "", "numReservations": "1",
-    }
-    r = s.post(
-        url, data=data,
-        headers={**HEADERS, "Referer": f"{BASE}/ASP/res_a.asp"},
-    )
 
-    # Sikeres foglalás jelei: átirányít vagy tartalmaz megerősítő szöveget
-    success = (
-        r.status_code == 200
-        and ("my_sch" in r.url or "Foglalt" in r.text or "Reserved" in r.text
-             or "receipt" in r.url.lower())
-    )
-    log.info("Foglalás %s (status=%s, url=%s)",
-             "SIKERES ✅" if success else "SIKERTELEN ❌",
-             r.status_code, r.url)
-    return success
+def book(page, csrf: str, res_deb_path: str) -> bool:
+    """
+    Elvégzi a tényleges foglalást.
+    """
+    log.info("Foglalás elküldése...")
+
+    # A legegyszerűbb: kattintsunk a már megtalált gombra
+    btn = page.query_selector("input.actionButton[onclick*='res_deb']")
+    if btn:
+        btn.click()
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=15_000)
+        except PWTimeout:
+            pass
+
+        url = page.url
+        content = page.content()
+        success = (
+            "my_sch" in url
+            or "receipt" in url.lower()
+            or "Foglalt" in content
+            or "Reserved" in content
+            or "confirmed" in content.lower()
+        )
+        log.info(
+            "Foglalás %s (url=%s)",
+            "SIKERES ✅" if success else "SIKERTELEN ❌", url
+        )
+        if not success:
+            # Extra info a hibakereséshez
+            log.info("Oldal tartalom (első 300 kar): %s", content[:300])
+        return success
+
+    log.error("Foglalás gomb nem található a res_a oldalon!")
+    return False
+
 
 def run():
-    s = setup_session()
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-blink-features=AutomationControlled",
+            ]
+        )
+        ctx = browser.new_context(
+            viewport={"width": 1280, "height": 800},
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/145.0.0.0 Safari/537.36"
+            ),
+            locale="hu-HU",
+        )
+        page = ctx.new_page()
 
-    # Ellenőrzés: van-e érvényes session
-    r = s.get(f"{BASE}/classic/mainclass", headers=HEADERS)
-    if "sign" in r.url.lower() or "login" in r.url.lower():
-        log.error("A session lejárt! Frissítsd a cookie-kat a MB_COOKIES secretben.")
-        sys.exit(1)
-    log.info("Session érvényes ✅")
-
-    # 2. Figyelés – 30 másodpercenként próbálkozik, max 20 percig
-    max_tries = 40
-    for attempt in range(1, max_tries + 1):
-        log.info("Kísérlet %d/%d – keresem az órát...", attempt, max_tries)
-        class_id = find_class(s)
-
-        if class_id:
-            # 3. CSRF token lekérése
-            csrf, res_deb_path = get_csrf(s, class_id)
-            if not csrf or not res_deb_path:
-                log.error("Nem sikerült a foglalási adatokat lekérni.")
+        try:
+            # 1. Bejelentkezés
+            if not login(page):
+                log.error("Bejelentkezés sikertelen.")
                 sys.exit(1)
 
-            # 4. Foglalás
-            if book(s, csrf, res_deb_path):
-                log.info("Kész! Az időpont le van foglalva.")
-                sys.exit(0)
-            else:
-                log.error("A foglalás nem sikerült.")
-                sys.exit(1)
+            # 2. Figyelés – RETRY_SEC másodpercenként, max MAX_TRIES-szor
+            for attempt in range(1, MAX_TRIES + 1):
+                log.info("── Kísérlet %d/%d ──", attempt, MAX_TRIES)
+                class_id = find_class(page)
 
-        if attempt < max_tries:
-            log.info("Várakozás 30 másodpercet...")
-            time.sleep(30)
+                if class_id:
+                    # 3. CSRF + res_deb URL lekérése
+                    csrf, res_deb_path = get_csrf_and_book_url(page, class_id)
+                    if not csrf or not res_deb_path:
+                        log.error("Foglalási adatok lekérése sikertelen.")
+                        sys.exit(1)
 
-    log.error("Időtúllépés – %d kísérlet után sem nyílt meg a foglalás.", max_tries)
-    sys.exit(1)
+                    # 4. Foglalás
+                    if book(page, csrf, res_deb_path):
+                        log.info("Kész! Az időpont le van foglalva. 🎉")
+                        sys.exit(0)
+                    else:
+                        log.error("A foglalás nem sikerült.")
+                        sys.exit(1)
+
+                if attempt < MAX_TRIES:
+                    log.info("Várakozás %d másodpercet...", RETRY_SEC)
+                    time.sleep(RETRY_SEC)
+
+            log.error("Időtúllépés – %d kísérlet után sem nyílt meg.", MAX_TRIES)
+            sys.exit(1)
+
+        except Exception as e:
+            log.exception("Váratlan hiba: %s", e)
+            # Screenshot mentés hibakereséshez
+            try:
+                page.screenshot(path="error.png")
+                log.info("Screenshot mentve: error.png")
+            except Exception:
+                pass
+            sys.exit(1)
+
+        finally:
+            browser.close()
+
 
 if __name__ == "__main__":
     run()
