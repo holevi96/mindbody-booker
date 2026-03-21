@@ -22,21 +22,38 @@ TG      = os.environ.get("MB_TG", "23")
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/120.0.0.0 Safari/537.36",
+                  "Chrome/145.0.0.0 Safari/537.36",
     "Accept-Language": "hu-HU,hu;q=0.9,en-US;q=0.8,en;q=0.7",
 }
 
 def login(s: requests.Session) -> bool:
+    # Először GET-eljük a login oldalt hogy megkapjuk az alap cookie-kat
+    s.get(f"{BASE}/ASP/su1.asp?studioid={STUDIO}&tg=&vt=&lvl=&stype=&view=&trn=0&page=&catid=&prodid=&date=3%2F21%2F2026&classid=0&sSU=&optForwardingLink=",
+          headers=HEADERS)
+
     url = f"{BASE}/Login?studioID={STUDIO}&isLibAsync=true&isJson=true"
     data = {
         "requiredtxtUserName": EMAIL,
         "requiredtxtPassword": PASSWD,
         "tg": "", "vt": "", "lvl": "", "stype": "", "qParam": "",
         "view": "", "trn": "0", "page": "", "catid": "", "prodid": "",
-        "date": DATE, "classid": "0", "sSU": "",
+        "date": "3/21/2026", "classid": "0", "sSU": "",
         "optForwardingLink": "", "isAsync": "false",
     }
-    r = s.post(url, data=data, headers={**HEADERS, "Referer": BASE})
+    login_headers = {
+        **HEADERS,
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": BASE,
+        "Referer": f"{BASE}/ASP/su1.asp?studioid={STUDIO}&tg=&vt=&lvl=&stype=&view=&trn=0&page=&catid=&prodid=&date=3%2F21%2F2026&classid=0&sSU=&optForwardingLink=",
+        "X-Requested-With": "XMLHttpRequest",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+    }
+    r = s.post(url, data=data, headers=login_headers)
+    log.info("Login response status: %s", r.status_code)
+    log.info("Login response body: %s", r.text[:200])
     ok = "idsrvauth" in s.cookies
     log.info("Login %s", "OK" if ok else "FAILED")
     return ok
