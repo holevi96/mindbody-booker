@@ -57,7 +57,14 @@ def find_class(page) -> str | None:
         document.querySelector('select[name="optLocation"]').value = '{LOC}';
         document.querySelector('form[name="search2"]').submit();
     """)
-    page.wait_for_load_state("domcontentloaded")
+    # Megvárjuk amíg a táblázat betöltődik (AJAX)
+    try:
+        page.wait_for_selector(
+            "#classSchedule-mainTable.classSchedule-mainTable-loaded",
+            timeout=15_000
+        )
+    except PWTimeout:
+        log.warning("Táblázat nem töltődött be időre.")
 
     # Összes sor a táblázatban
     rows = page.query_selector_all(".row")
