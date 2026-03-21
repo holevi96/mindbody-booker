@@ -11,13 +11,13 @@ log = logging.getLogger(__name__)
 
 BASE    = "https://clients.mindbodyonline.com"
 STUDIO  = os.environ["MB_STUDIO_ID"]        # pl. 48016
-EMAIL   = os.environ["MB_EMAIL"]
-PASSWD  = os.environ["MB_PASSWORD"]
 INSTR   = os.environ["MB_INSTRUCTOR"]       # pl. "Ujvári Cili"
 CLASS   = os.environ["MB_CLASS"]            # pl. "TRX köredzés"
 DATE    = os.environ["MB_CLASS_DATE"]       # pl. "3/30/2026"
 LOC     = os.environ.get("MB_LOCATION", "2")
 TG      = os.environ.get("MB_TG", "23")
+# Cookie-k JSON stringként: '{"ASP.NET_SessionId":"xxx","idsrvauth":"yyy",...}'
+COOKIES_JSON = os.environ["MB_COOKIES"]
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -26,37 +26,14 @@ HEADERS = {
     "Accept-Language": "hu-HU,hu;q=0.9,en-US;q=0.8,en;q=0.7",
 }
 
-def login(s: requests.Session) -> bool:
-    # Először GET-eljük a login oldalt hogy megkapjuk az alap cookie-kat
-    s.get(f"{BASE}/ASP/su1.asp?studioid={STUDIO}&tg=&vt=&lvl=&stype=&view=&trn=0&page=&catid=&prodid=&date=3%2F21%2F2026&classid=0&sSU=&optForwardingLink=",
-          headers=HEADERS)
-
-    url = f"{BASE}/Login?studioID={STUDIO}&isLibAsync=true&isJson=true"
-    data = {
-        "requiredtxtUserName": EMAIL,
-        "requiredtxtPassword": PASSWD,
-        "tg": "", "vt": "", "lvl": "", "stype": "", "qParam": "",
-        "view": "", "trn": "0", "page": "", "catid": "", "prodid": "",
-        "date": "3/21/2026", "classid": "0", "sSU": "",
-        "optForwardingLink": "", "isAsync": "false",
-    }
-    login_headers = {
-        **HEADERS,
-        "Accept": "application/json, text/javascript, */*; q=0.01",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "Origin": BASE,
-        "Referer": f"{BASE}/ASP/su1.asp?studioid={STUDIO}&tg=&vt=&lvl=&stype=&view=&trn=0&page=&catid=&prodid=&date=3%2F21%2F2026&classid=0&sSU=&optForwardingLink=",
-        "X-Requested-With": "XMLHttpRequest",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-    }
-    r = s.post(url, data=data, headers=login_headers)
-    log.info("Login response status: %s", r.status_code)
-    log.info("Login response body: %s", r.text[:200])
-    ok = "idsrvauth" in s.cookies
-    log.info("Login %s", "OK" if ok else "FAILED")
-    return ok
+def setup_session() -> requests.Session:
+    """Cookie-kat tölt be a környezeti változóból."""
+    s = requests.Session()
+    cookies = json.loads(COOKIES_JSON)
+    for k, v in cookies.items():
+        s.cookies.set(k, v, domain="clients.mindbodyonline.com")
+    log.info("Session beállítva %d cookie-val.", len(cookies))
+    return s
 
 def find_class(s: requests.Session):
     """
@@ -173,12 +150,14 @@ def book(s: requests.Session, csrf: str, res_deb_path: str) -> bool:
     return success
 
 def run():
-    s = requests.Session()
+    s = setup_session()
 
-    # 1. Bejelentkezés
-    if not login(s):
-        log.error("Bejelentkezés sikertelen, kilépés.")
+    # Ellenőrzés: van-e érvényes session
+    r = s.get(f"{BASE}/classic/mainclass", headers=HEADERS)
+    if "sign" in r.url.lower() or "login" in r.url.lower():
+        log.error("A session lejárt! Frissítsd a cookie-kat a MB_COOKIES secretben.")
         sys.exit(1)
+    log.info("Session érvényes ✅")
 
     # 2. Figyelés – 30 másodpercenként próbálkozik, max 20 percig
     max_tries = 40
