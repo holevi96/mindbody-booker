@@ -1,7 +1,17 @@
 name: Watcher
 
 on:
-  workflow_dispatch:  # a weboldal indítja el
+  workflow_dispatch:
+    inputs:
+      mb_email:
+        description: "Mindbody email"
+        required: true
+      mb_password:
+        description: "Mindbody jelszó"
+        required: true
+      mb_studio_id:
+        description: "Studio ID"
+        required: true
 
 jobs:
   watch:
@@ -16,12 +26,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.MY_PAT }}
           REPO:     ${{ github.repository }}
+          MB_EMAIL:     ${{ github.event.inputs.mb_email }}
+          MB_PASSWORD:  ${{ github.event.inputs.mb_password }}
+          MB_STUDIO_ID: ${{ github.event.inputs.mb_studio_id }}
         run: |
           echo "Watcher elindult. Olvasom a schedule.json-t..."
 
-          # schedule.json beolvasása
+          # config.json és schedule.json beolvasása
           if [ ! -f schedule.json ]; then
-            echo "Nincs schedule.json fájl, kilépés."
+            echo "Hiányzó schedule.json, kilépés."
             exit 1
           fi
 
@@ -52,7 +65,10 @@ jobs:
                 --field instructor="$INSTRUCTOR" \
                 --field class_name="$CLASS_NAME" \
                 --field class_date="$CLASS_DATE" \
-                --field location="$LOCATION"
+                --field location="$LOCATION" \
+                --field mb_email="$MB_EMAIL" \
+                --field mb_password="$MB_PASSWORD" \
+                --field mb_studio_id="$MB_STUDIO_ID"
 
               echo "Foglalás elindítva! Watcher leáll."
               exit 0
