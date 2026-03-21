@@ -1,0 +1,68 @@
+name: Watcher
+
+on:
+  workflow_dispatch:  # a weboldal indítja el
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # max 6 óra fut
+
+    steps:
+      - name: Kód letöltése
+        uses: actions/checkout@v4
+
+      - name: Várakozás és foglalás indítása
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO:     ${{ github.repository }}
+        run: |
+          echo "Watcher elindult. Olvasom a schedule.json-t..."
+
+          # schedule.json beolvasása
+          if [ ! -f schedule.json ]; then
+            echo "Nincs schedule.json fájl, kilépés."
+            exit 1
+          fi
+
+          RUN_AT=$(jq -r '.run_at' schedule.json)
+          INSTRUCTOR=$(jq -r '.instructor' schedule.json)
+          CLASS_NAME=$(jq -r '.class_name' schedule.json)
+          CLASS_DATE=$(jq -r '.class_date' schedule.json)
+          LOCATION=$(jq -r '.location' schedule.json)
+
+          echo "Ütemezve: $INSTRUCTOR / $CLASS_NAME / $CLASS_DATE"
+          echo "Foglalás időpontja: $RUN_AT"
+
+          # Várakozási ciklus
+          while true; do
+            NOW=$(date -u +%s)
+            TARGET=$(date -u -d "$RUN_AT" +%s)
+            DIFF=$((TARGET - NOW))
+
+            echo "Hátralévő idő: ${DIFF} másodperc"
+
+            if [ $DIFF -le 0 ]; then
+              echo "Elértük az időpontot! Foglalás indítása..."
+
+              # Booker workflow elindítása
+              gh workflow run book.yml \
+                --repo "$REPO" \
+                --ref main \
+                --field instructor="$INSTRUCTOR" \
+                --field class_name="$CLASS_NAME" \
+                --field class_date="$CLASS_DATE" \
+                --field location="$LOCATION"
+
+              echo "Foglalás elindítva! Watcher leáll."
+              exit 0
+            fi
+
+            # 5 percenként ellenőriz, de ha kevesebb mint 5 perc van hátra,
+            # pontosabban vár
+            if [ $DIFF -le 300 ]; then
+              sleep 30
+            else
+              sleep 300
+            fi
+          done
