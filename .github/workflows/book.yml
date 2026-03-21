@@ -36,8 +36,7 @@ jobs:
 
       - name: Futtatás
         env:
-          MB_EMAIL:       ${{ secrets.MB_EMAIL }}
-          MB_PASSWORD:    ${{ secrets.MB_PASSWORD }}
+          MB_COOKIES:     ${{ secrets.MB_COOKIES }}
           MB_STUDIO_ID:   ${{ secrets.MB_STUDIO_ID }}
           MB_INSTRUCTOR:  ${{ github.event.inputs.instructor }}
           MB_CLASS:       ${{ github.event.inputs.class_name }}
