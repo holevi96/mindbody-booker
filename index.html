@@ -18,11 +18,8 @@
     .container { width: 100%; max-width: 480px; }
     h1 { font-size: 20px; font-weight: 600; margin-bottom: 1.5rem; color: #111; }
     .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      border: 1px solid #e5e5e5;
+      background: #fff; border-radius: 12px; padding: 1.25rem;
+      margin-bottom: 1rem; border: 1px solid #e5e5e5;
     }
     .card-title {
       font-size: 12px; font-weight: 600; color: #888;
@@ -30,12 +27,12 @@
     }
     label { font-size: 14px; font-weight: 500; color: #333; display: block; margin-bottom: 6px; margin-top: 14px; }
     label:first-of-type { margin-top: 0; }
-    input, select {
+    input {
       width: 100%; padding: 10px 12px; border: 1px solid #ddd;
       border-radius: 8px; font-size: 15px; color: #111;
       background: #fafafa; transition: border-color 0.15s; -webkit-appearance: none;
     }
-    input:focus, select:focus { outline: none; border-color: #555; background: #fff; }
+    input:focus { outline: none; border-color: #555; background: #fff; }
     .hint { font-size: 12px; color: #999; margin-top: 5px; }
     .hint a { color: #555; }
     .btn {
@@ -46,9 +43,7 @@
     .btn:hover { background: #333; }
     .btn:active { transform: scale(0.98); }
     .btn:disabled { background: #999; cursor: not-allowed; }
-    .btn-secondary {
-      background: #fff; color: #111; border: 1px solid #ddd;
-    }
+    .btn-secondary { background: #fff; color: #111; border: 1px solid #ddd; }
     .btn-secondary:hover { background: #f5f5f5; }
     .status {
       margin-top: 1rem; padding: 12px; border-radius: 8px;
@@ -69,12 +64,14 @@
       font-size: 11px; padding: 2px 8px; border-radius: 20px; margin-left: 8px;
     }
     .time-preview { font-size: 13px; color: #555; margin-top: 6px; min-height: 18px; }
+    .divider { border: none; border-top: 1px solid #eee; margin: 1.25rem 0; }
   </style>
 </head>
 <body>
 <div class="container">
   <h1>🏋️ Mindbody foglalás</h1>
 
+  <!-- EDZÉS ADATAI -->
   <div class="card">
     <div class="card-title">Edzés adatai</div>
     <label>Edző neve</label>
@@ -89,6 +86,7 @@
     <p class="hint">Life1 Corvin Wellness = 2</p>
   </div>
 
+  <!-- IDŐZÍTÉS -->
   <div class="card">
     <div class="card-title">Mikor induljon el a foglalás?</div>
     <label>Időpont</label>
@@ -100,13 +98,14 @@
   <button class="btn" id="scheduleBtn" onclick="schedule()">⏰ Foglalás ütemezése</button>
   <div class="status" id="status"></div>
 
+  <!-- BEÁLLÍTÁSOK -->
   <span class="settings-toggle" onclick="toggleSettings()">
     ⚙️ Beállítások
     <span id="settings-saved" style="display:none" class="saved-badge">mentve</span>
   </span>
 
   <div class="card settings-card" id="settings-card">
-    <div class="card-title">GitHub beállítások (egyszer kell)</div>
+    <div class="card-title">GitHub</div>
     <label>GitHub token</label>
     <input type="password" id="gh_token" placeholder="ghp_...">
     <p class="hint">
@@ -116,18 +115,18 @@
     <label>GitHub repó</label>
     <input type="text" id="gh_repo" placeholder="felhasználónév/mindbody-booker">
 
-    <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #eee;">
-      <div class="card-title" style="margin-bottom: 0.75rem;">Mindbody fiók</div>
-      <label>Email</label>
-      <input type="email" id="mb_email" placeholder="pelda@email.com">
-      <label>Jelszó</label>
-      <input type="password" id="mb_password" placeholder="••••••••">
-      <label>Studio ID</label>
-      <input type="text" id="mb_studio_id" placeholder="pl. 48016">
-      <p class="hint">Az URL-ből: clients.mindbodyonline.com/...?studioid=XXXXX</p>
-    </div>
+    <hr class="divider">
 
-    <button class="btn btn-secondary" onclick="saveSettings()" style="margin-top:1rem;">
+    <div class="card-title">Mindbody fiók</div>
+    <label>Email</label>
+    <input type="email" id="mb_email" placeholder="pelda@email.com">
+    <label>Jelszó</label>
+    <input type="password" id="mb_password" placeholder="••••••••">
+    <label>Studio ID</label>
+    <input type="text" id="mb_studio_id" placeholder="pl. 48016">
+    <p class="hint">Az URL-ből: clients.mindbodyonline.com/...?studioid=XXXXX</p>
+
+    <button class="btn btn-secondary" onclick="saveSettings()">
       Beállítások mentése
     </button>
   </div>
@@ -136,14 +135,13 @@
 <script>
   // Beállítások betöltése
   const saved = JSON.parse(localStorage.getItem('mb_settings') || '{}');
-  if (saved.token)      document.getElementById('gh_token').value      = saved.token;
-  if (saved.repo)       document.getElementById('gh_repo').value       = saved.repo;
-  if (saved.instructor) document.getElementById('instructor').value    = saved.instructor;
-  if (saved.class_name) document.getElementById('class_name').value    = saved.class_name;
-  if (saved.location)   document.getElementById('location').value      = saved.location;
-  if (saved.mb_email)      document.getElementById('mb_email').value      = saved.mb_email;
-  if (saved.mb_password)   document.getElementById('mb_password').value   = saved.mb_password;
-  if (saved.mb_studio_id)  document.getElementById('mb_studio_id').value  = saved.mb_studio_id;
+  if (saved.token)         document.getElementById('gh_token').value      = saved.token;
+  if (saved.repo)          document.getElementById('gh_repo').value        = saved.repo;
+  if (saved.instructor)    document.getElementById('instructor').value     = saved.instructor;
+  if (saved.class_name)    document.getElementById('class_name').value     = saved.class_name;
+  if (saved.location)      document.getElementById('location').value       = saved.location;
+  if (saved.mb_email)      document.getElementById('mb_email').value       = saved.mb_email;
+  if (saved.mb_studio_id)  document.getElementById('mb_studio_id').value   = saved.mb_studio_id;
   if (saved.token || saved.repo)
     document.getElementById('settings-saved').style.display = 'inline-block';
 
@@ -165,14 +163,13 @@
 
   function saveSettings() {
     const s = {
-      token:         document.getElementById('gh_token').value.trim(),
-      repo:          document.getElementById('gh_repo').value.trim(),
-      instructor:    document.getElementById('instructor').value.trim(),
-      class_name:    document.getElementById('class_name').value.trim(),
-      location:      document.getElementById('location').value.trim(),
-      mb_email:      document.getElementById('mb_email').value.trim(),
-      mb_password:   document.getElementById('mb_password').value,
-      mb_studio_id:  document.getElementById('mb_studio_id').value.trim(),
+      token:        document.getElementById('gh_token').value.trim(),
+      repo:         document.getElementById('gh_repo').value.trim(),
+      instructor:   document.getElementById('instructor').value.trim(),
+      class_name:   document.getElementById('class_name').value.trim(),
+      location:     document.getElementById('location').value.trim(),
+      mb_email:     document.getElementById('mb_email').value.trim(),
+      mb_studio_id: document.getElementById('mb_studio_id').value.trim(),
     };
     localStorage.setItem('mb_settings', JSON.stringify(s));
     document.getElementById('settings-saved').style.display = 'inline-block';
@@ -187,15 +184,14 @@
     const classDate  = document.getElementById('class_date').value.trim();
     const location   = document.getElementById('location').value.trim();
     const runAt      = document.getElementById('run_at').value;
-
-    const mb_email     = document.getElementById('mb_email').value.trim();
-    const mb_password  = document.getElementById('mb_password').value;
-    const mb_studio_id = document.getElementById('mb_studio_id').value.trim();
+    const mbEmail    = document.getElementById('mb_email').value.trim();
+    const mbPassword = document.getElementById('mb_password').value;
+    const mbStudioId = document.getElementById('mb_studio_id').value.trim();
 
     if (!token || !repo || !instructor || !className || !classDate || !runAt) {
       showStatus('err', 'Kérlek tölts ki minden mezőt!'); return;
     }
-    if (!mb_email || !mb_password || !mb_studio_id) {
+    if (!mbEmail || !mbPassword || !mbStudioId) {
       showStatus('err', 'Add meg a Mindbody fiók adatait a Beállításokban!'); return;
     }
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(classDate)) {
@@ -209,25 +205,30 @@
     const runAtISO = new Date(runAt).toISOString();
 
     try {
-      // 1. config.json mentése (Mindbody adatok)
-      const configData = { mb_email, mb_password, mb_studio_id };
-      await saveFile(owner, repoName, token, 'config.json', configData, 'Mindbody konfig frissítve');
+      // 1. schedule.json mentése a repóba (csak az óra adatai, NEM a jelszó)
+      const scheduleData = {
+        instructor, class_name: className,
+        class_date: classDate, location, run_at: runAtISO
+      };
+      await saveFile(owner, repoName, token, 'schedule.json', scheduleData,
+        `Foglalás ütemezve: ${classDate} – ${instructor}`);
 
-      // 2. schedule.json mentése
-      const scheduleData = { instructor, class_name: className, class_date: classDate, location, run_at: runAtISO };
-      // 3. schedule.json mentése
-      await saveFile(owner, repoName, token, 'schedule.json', scheduleData, `Foglalás ütemezve: ${classDate} – ${instructor}`);
-
-      // 2. Watcher workflow elindítása
+      // 2. Watcher elindítása – jelszó paraméterként megy, nem fájlba
       const dispatchRes = await ghFetch(
         `repos/${owner}/${repoName}/actions/workflows/watcher.yml/dispatches`,
-        token, 'POST', { ref: 'main' }
+        token, 'POST', {
+          ref: 'main',
+          inputs: {
+            mb_email:     mbEmail,
+            mb_password:  mbPassword,
+            mb_studio_id: mbStudioId,
+          }
+        }
       );
 
       if (dispatchRes.status === 204) {
-        // Elmentjük az adatokat
         const s = JSON.parse(localStorage.getItem('mb_settings') || '{}');
-        Object.assign(s, { instructor, class_name: className, location });
+        Object.assign(s, { instructor, class_name: className, location, mb_email: mbEmail, mb_studio_id: mbStudioId });
         localStorage.setItem('mb_settings', JSON.stringify(s));
 
         const dt = new Date(runAt);
@@ -238,8 +239,8 @@
         const e = await dispatchRes.json().catch(() => ({}));
         showStatus('err', `Watcher indítási hiba (${dispatchRes.status}): ${e.message || 'Ellenőrizd a tokent!'}`);
       }
-    } catch (e) {
-      showStatus('err', `Hálózati hiba: ${e.message}`);
+    } catch(e) {
+      showStatus('err', `Hiba: ${e.message}`);
     } finally {
       document.getElementById('scheduleBtn').disabled = false;
     }
