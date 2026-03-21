@@ -56,6 +56,9 @@ def find_class(s: requests.Session):
         data=data,
         headers={**HEADERS, "Referer": f"{BASE}/classic/mainclass"},
     )
+    log.info("mainclass response: status=%s url=%s", r.status_code, r.url)
+    log.info("mainclass response body (első 500 kar): %s", r.text[:500])
+
     soup = BeautifulSoup(r.text, "html.parser")
     rows = soup.select(".row")
 
