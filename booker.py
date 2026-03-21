@@ -49,7 +49,7 @@ def find_class(page) -> str | None:
     Visszaadja a classId-t ha megtalálta, None-t ha még nem foglalható.
     """
     log.info("Órarend lekérése (dátum: %s)...", DATE)
-    page.goto(f"{BASE}/classic/mainclass", wait_until="domcontentloaded")
+    page.goto(f"{BASE}/classic/mainclass?fl=true&tabID=7", wait_until="domcontentloaded")
 
     # Dátum beállítása és szűrés
     page.evaluate(f"""
