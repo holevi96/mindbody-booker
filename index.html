@@ -41,6 +41,14 @@
       cursor: pointer;
     }
     select:focus { outline: none; border-color: #555; background: #fff; }
+    .select-row { display: flex; gap: 8px; align-items: center; }
+    .select-row select { flex: 1; min-width: 0; }
+    .fav-btn {
+      padding: 10px 11px; border: 1px solid #ddd; border-radius: 8px;
+      background: #fafafa; cursor: pointer; font-size: 16px; line-height: 1;
+      flex-shrink: 0; transition: background 0.15s, border-color 0.15s;
+    }
+    .fav-btn:hover { background: #fff8e1; border-color: #f0c040; }
     .hint { font-size: 12px; color: #999; margin-top: 5px; }
     .hint a { color: #555; }
     .btn {
@@ -83,7 +91,10 @@
   <div class="card">
     <div class="card-title">Edzés adatai</div>
     <label>Edző neve</label>
-    <input type="text" id="instructor" placeholder="pl. Ujvári Cili">
+    <div class="select-row">
+      <select id="instructor"></select>
+      <button type="button" class="fav-btn" id="favBtn" onclick="saveFavourite()" title="Kedvenc beállítása">⭐</button>
+    </div>
     <label>Óra neve</label>
     <input type="text" id="class_name" placeholder="pl. TRX köredzés">
     <label>Edzés dátuma</label>
@@ -146,11 +157,67 @@
 </div>
 
 <script>
+  const INSTRUCTORS = [
+    'Ábrahám Zsanna','Adamkó Szilvi','Ajanidisz Teodóra','Andris Anita','Angyal Kyra',
+    'Angyal Mercédesz','Antal Laura HU/EN','Auer Bernadett','Bajnok Dávid','Balog Bíborka Bella',
+    'Béres Réka','Berki Betti','Borbély Beatrix','Borbély Noémi HU/EN','Böröcz Anita',
+    'Boros Orsolya HU/EN','Csonka Anita','Czigány Betti','Dán Vanda','Dankó Krisztina',
+    'Dobos Fanny HU/EN','Dráviczki Sándor','Erdélyi Annamari','Erdős Réka','Fábián Roland',
+    'Fehér Sándor','Fischer Gábor HU/EN','Fodor Gabriella','Gerencsér Ágnes','Gergye Laura',
+    'Gerő Luca','Göde Dorka','Gyurkovics Anikó HU/EN','Hankó Nóri','Harnos Erika',
+    'Hesztera Dóra','Hóbel Timi','Hodosi Tamás','Jámbor Bea','Jónás Gergely',
+    'Juhász Bianka','Kabai Petra','Kalamár Eszter','Kalló Zsuzsa','Kárpáti Ildikó HU/EN',
+    'Kárpáti Móni','Kaszás Lilla','Kazi Alex','Kempelen Zita','Kilin Tomi',
+    'Kis Zsófi','Kocsis Kata','Kovács Andrea','Kovács Laura','Kovács Rózsa',
+    'Králik Eszter HU/EN','Kurcz Móni','Lebedi Zalán','Léczfalvi Vivien','Life1 Trainer',
+    'Lőrincz Ernő','Majoros Anikó','Milovecz Tünde','Moldova Gyuri HU/EN','Molnár Dani',
+    'Molnár Tibor','Nagy Vivien','Nagy Zsuzsa','Nyőgér Ági HU/EN','Oli Renáta',
+    'Olléh Péter','Osvaldo','Palkó Roberta HU/EN','Párdi Erika HU/EN','Paulovics Adrienn',
+    'Petracsek Virág','Polányi Petra','Radácsy Petra','Reitter Zsófia','Samu Kriszti',
+    'Sándor Zsanett HU/EN','Sánta Stella HU/EN','Sas Eszter','Serrano Gergő HU/EN','Sira Gyula',
+    'Stein Fanni','Szabó Csenge','Szabó Júlia','Szabó Nahid HU/EN','Szalai Ági HU/EN',
+    'Szalka Andi','Szalma Borka','Szaunamester','Szaunamester Corvin','Szebenyi Szabina',
+    'Széles Natália','Szentgyörgyi Lilien','Szőcs Gabi HU/EN','Szűcs Kata HU/EN','Takács Henriett',
+    'Tar Edit','Tihanyi Ákos','Tímea Sifter HU/EN','Tordai Luca','Tornai Piroska HU/EN',
+    'Tóth Anett','Trankó Ida','Tücsi S. Márti','Ugróczi Móni','Ujhelyi Zsuzsi HU/EN',
+    'Ujvári Cili','Vass Zsófi','Vatamány Krisztina','Veres Zsuzsa','Virág Vera',
+    'Völgyes Flávia','Vörös Alexandra','Vujicsity Viktória',
+  ];
+
+  function buildInstructorSelect(selectedName) {
+    const sel = document.getElementById('instructor');
+    const fav = localStorage.getItem('mb_favourite_instructor');
+    sel.innerHTML = '';
+
+    if (fav) {
+      const pinned = Object.assign(document.createElement('option'), { value: fav, textContent: '⭐ ' + fav });
+      sel.appendChild(pinned);
+      const sep = Object.assign(document.createElement('option'), { disabled: true, textContent: '──────────────' });
+      sel.appendChild(sep);
+    }
+
+    INSTRUCTORS.forEach(name => {
+      sel.appendChild(Object.assign(document.createElement('option'), { value: name, textContent: name }));
+    });
+
+    sel.value = selectedName || fav || INSTRUCTORS[0];
+  }
+
+  function saveFavourite() {
+    const name = document.getElementById('instructor').value;
+    if (!name) return;
+    localStorage.setItem('mb_favourite_instructor', name);
+    buildInstructorSelect(name);
+    const btn = document.getElementById('favBtn');
+    btn.textContent = '★';
+    setTimeout(() => { btn.textContent = '⭐'; }, 1200);
+  }
+
   // Beállítások betöltése
   const saved = JSON.parse(localStorage.getItem('mb_settings') || '{}');
   if (saved.token)         document.getElementById('gh_token').value      = saved.token;
   if (saved.repo)          document.getElementById('gh_repo').value        = saved.repo;
-  if (saved.instructor)    document.getElementById('instructor').value     = saved.instructor;
+  buildInstructorSelect(saved.instructor || '');
   if (saved.class_name)    document.getElementById('class_name').value     = saved.class_name;
   if (saved.location)      document.getElementById('location').value       = saved.location;
   if (saved.mb_email)      document.getElementById('mb_email').value       = saved.mb_email;
