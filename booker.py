@@ -165,19 +165,22 @@ def book(page) -> bool:
     """
     log.info("Foglalás gomb keresése...")
 
-    # Megvizsgáljuk hogy betelt-e az óra (várólista eset)
-    waitlist_btn = page.query_selector("input[name='AddWLButton']")
-    if waitlist_btn:
-        return _join_waitlist(page, waitlist_btn)
-
+    # Wait for either the regular booking button or the waitlist button
     try:
-        btn = page.wait_for_selector(
-            "input.actionButton[onclick*='res_deb']",
+        page.wait_for_selector(
+            "input.actionButton[onclick*='res_deb'], input[name='AddWLButton']",
             timeout=10_000
         )
     except PWTimeout:
         log.error("Foglalás gomb nem jelent meg!")
         return False
+
+    # Megvizsgáljuk hogy betelt-e az óra (várólista eset)
+    waitlist_btn = page.query_selector("input[name='AddWLButton']")
+    if waitlist_btn:
+        return _join_waitlist(page, waitlist_btn)
+
+    btn = page.query_selector("input.actionButton[onclick*='res_deb']")
 
     log.info("Foglalás gombra kattintás...")
     with page.expect_navigation(timeout=15_000, wait_until="domcontentloaded"):
