@@ -1,7 +1,8 @@
 """
 Mindbody automatikus időpontfoglaló – Playwright alapú
 """
-import os, sys, time, logging
+import os, re, sys, time, logging
+from datetime import datetime, date as Date
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
@@ -18,6 +19,33 @@ LOC        = os.environ.get("MB_LOCATION", "2")
 TG         = os.environ.get("MB_TG", "23")
 MAX_TRIES  = int(os.environ.get("MB_MAX_TRIES", "40"))
 RETRY_SEC  = int(os.environ.get("MB_RETRY_SEC", "30"))
+
+
+_HU_EN_MONTHS = {
+    'jan': 1, 'feb': 2, 'mar': 3, 'már': 3, 'apr': 4, 'ápr': 4,
+    'may': 5, 'máj': 5, 'jun': 6, 'jún': 6, 'jul': 7, 'júl': 7,
+    'aug': 8, 'sep': 9, 'sze': 9, 'oct': 10, 'okt': 10,
+    'nov': 11, 'dec': 12,
+}
+
+def _parse_header_date(text: str) -> Date | None:
+    """Extract date from a header like 'Szerda/Wednesday 01 Április/April 2026'."""
+    m = re.search(r'(\d{1,2})\s+\w+/(\w+)\.?\s+(\d{4})', text)
+    if not m:
+        return None
+    day, month_key, year = int(m.group(1)), m.group(2).lower()[:3], int(m.group(3))
+    month = _HU_EN_MONTHS.get(month_key)
+    if not month:
+        return None
+    try:
+        return Date(year, month, day)
+    except ValueError:
+        return None
+
+
+def _parse_target_date() -> Date:
+    """Parse MB_CLASS_DATE env var (DD/MM/YYYY)."""
+    return datetime.strptime(DATE, "%d/%m/%Y").date()
 
 
 def login(page) -> bool:
@@ -47,8 +75,14 @@ def find_and_click(page) -> bool:
     """
     Lekéri az órarendet, megkeresi az órát és rákattint a SignupButton-ra.
     True-t ad vissza ha kattintott, False-t ha még nem foglalható.
+
+    A heti nézet több azonos nevű órát is tartalmazhat (pl. ugyanaz az edző
+    hétfőn és szerdán is). A dátum egyezést kétféleképpen ellenőrzi:
+      1. A SignupButton onclick attribútumából kiolvasott classDate (legmegbízhatóbb)
+      2. Az előző .header div szövegéből kinyert dátum (fallback, ha nincs gomb)
     """
-    log.info("Órarend lekérése (dátum: %s)...", DATE)
+    target = _parse_target_date()
+    log.info("Órarend lekérése (dátum: %s → %s)...", DATE, target)
     page.goto(f"{BASE}/classic/mainclass?fl=true&tabID=7", wait_until="domcontentloaded")
 
     # Dátum és helyszín beállítása
@@ -67,17 +101,48 @@ def find_and_click(page) -> bool:
     except PWTimeout:
         log.warning("Táblázat nem töltődött be időre.")
 
-    rows = page.query_selector_all(".row")
-    log.info("%d sor az órarendben.", len(rows))
+    container = page.query_selector("#classSchedule-mainTable")
+    if not container:
+        log.warning("Tábla konténer nem található.")
+        return False
 
-    for row in rows:
-        text = row.inner_text()
+    children = container.query_selector_all(":scope > div")
+    log.info("%d elem a táblában.", len(children))
+
+    current_date: Date | None = None
+
+    for child in children:
+        cls = child.get_attribute("class") or ""
+
+        if "header" in cls:
+            current_date = _parse_header_date(child.inner_text())
+            if current_date:
+                log.info("Fejléc dátum: %s", current_date)
+            continue
+
+        if "row" not in cls:
+            continue
+
+        # Ha van SignupButton, a classDate az onclick-ből a legmegbízhatóbb dátum
+        btn = child.query_selector("input.SignupButton")
+        if btn:
+            onclick = btn.get_attribute("onclick") or ""
+            m = re.search(r'classDate=(\d+/\d+/\d+)', onclick)
+            if m:
+                try:
+                    current_date = datetime.strptime(m.group(1), "%m/%d/%Y").date()
+                except ValueError:
+                    pass
+
+        if current_date != target:
+            continue
+
+        text = child.inner_text()
         if INSTR not in text or CLASS not in text:
             continue
 
-        log.info("Óra megtalálva: %s", text[:80].replace("\n", " "))
+        log.info("Óra megtalálva (dátum: %s): %s", current_date, text[:80].replace("\n", " "))
 
-        btn = row.query_selector("input.SignupButton")
         if not btn:
             log.info("Foglalás még nem nyílt meg.")
             return False
@@ -87,7 +152,7 @@ def find_and_click(page) -> bool:
             btn.click()
         return True
 
-    log.info("Az óra nem szerepel az órarenden.")
+    log.info("Az óra nem szerepel az órarenden (keresett dátum: %s).", target)
     return False
 
 
