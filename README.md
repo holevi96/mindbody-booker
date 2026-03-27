@@ -77,14 +77,14 @@ Kattints **Beállítások mentése** – ezután nem kell többé megadni.
 
 1. Nyisd meg a weboldalt: `https://FELHASZNÁLÓNÉV.github.io/mindbody-booker`
 2. Töltsd ki az edzés adatait:
-   - **Edző neve** – pontosan ahogy a Mindbody-n szerepel (pl. `Ujvári Cili`)
-   - **Óra neve** – pontosan ahogy a Mindbody-n szerepel (pl. `TRX köredzés`)
-   - **Edzés dátuma** – `nap/hónap/év` formátumban (pl. `30/03/2026`)
-   - **Helyszín ID** – Life1 Corvin Wellness esetén `2`
+   - **Edző neve** – válaszd ki a legördülő listából; a ⭐ gombbal kedvencnek jelölheted, ekkor a neve a lista tetején jelenik meg következő alkalommal
+   - **Edzés dátuma** – kattints a mezőre, naptárból választhatsz (`nap/hónap/év` formátumban)
+   - **Óra kezdete** – az óra kezdési időpontja (pl. `11:00`); ha az edző ugyanazon a napon több órát is tart, ezzel azonosítja a rendszer a helyes sort
+   - **Helyszín** – válaszd ki a legördülő listából
 3. Állítsd be az időpontot – mikor induljon el a foglalás (általában éjfél előtt 2-3 perccel: `23:57`)
 4. Kattints **⏰ Foglalás ütemezése**
 
-A rendszer elmenti az adatokat és elindítja a Watchert, ami pontosan a megadott időpontban lefoglalja az edzést.
+A rendszer elmenti az adatokat és elindítja a Watchert, ami pontosan a megadott időpontban lefoglalja az edzést. Ha az óra betelt, automatikusan várólistára iratkozik fel.
 
 ---
 
@@ -121,7 +121,7 @@ A rendszer elmenti az adatokat és elindítja a Watchert, ami pontosan a megadot
 
 **"Watcher indítási hiba (403)"** – a GitHub token nem megfelelő. Hozz létre új Classic tokent `workflow` scope-pal és frissítsd a `MY_PAT` secretet.
 
-**"Az óra nem szerepel az órarenden"** – ellenőrizd hogy az edző neve és az óra neve pontosan egyezik-e a Mindbody-n látható névvel (ékezetek, szóközök).
+**"Az óra nem szerepel az órarenden"** – ellenőrizd hogy az edző neve pontosan egyezik-e a Mindbody-n látható névvel (ékezetek, szóközök), és hogy a megadott időpont (pl. `11:00`) valóban szerepel az órarendben.
 
 **"Login FAILED"** – ellenőrizd a Mindbody email és jelszó adatokat a Beállításokban.
 
