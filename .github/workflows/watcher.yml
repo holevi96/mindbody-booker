@@ -41,9 +41,10 @@ jobs:
           RUN_AT=$(jq -r '.run_at' schedule.json)
           INSTRUCTOR=$(jq -r '.instructor' schedule.json)
           CLASS_DATE=$(jq -r '.class_date' schedule.json)
+          CLASS_TIME=$(jq -r '.class_time // ""' schedule.json)
           LOCATION=$(jq -r '.location' schedule.json)
 
-          echo "Ütemezve: $INSTRUCTOR / $CLASS_DATE"
+          echo "Ütemezve: $INSTRUCTOR / $CLASS_DATE $CLASS_TIME"
           echo "Foglalás időpontja: $RUN_AT"
 
           # Várakozási ciklus
@@ -63,6 +64,7 @@ jobs:
                 --ref main \
                 --field instructor="$INSTRUCTOR" \
                 --field class_date="$CLASS_DATE" \
+                --field class_time="$CLASS_TIME" \
                 --field location="$LOCATION" \
                 --field mb_email="$MB_EMAIL" \
                 --field mb_password="$MB_PASSWORD" \

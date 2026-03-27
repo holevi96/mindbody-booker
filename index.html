@@ -97,6 +97,8 @@
     </div>
 <label>Edzés dátuma</label>
     <input type="text" id="class_date" placeholder="pl. 30/03/2026" readonly>
+    <label>Óra kezdete</label>
+    <input type="time" id="class_time">
     <label>Helyszín</label>
     <select id="location">
       <option value="4">Life1 Allee Fitness</option>
@@ -216,6 +218,7 @@
   if (saved.token)         document.getElementById('gh_token').value      = saved.token;
   if (saved.repo)          document.getElementById('gh_repo').value        = saved.repo;
   buildInstructorSelect(saved.instructor || '');
+  if (saved.class_time)    document.getElementById('class_time').value     = saved.class_time;
   if (saved.location)      document.getElementById('location').value       = saved.location;
   if (saved.mb_email)      document.getElementById('mb_email').value       = saved.mb_email;
   if (saved.mb_studio_id)  document.getElementById('mb_studio_id').value   = saved.mb_studio_id;
@@ -243,6 +246,7 @@
       token:        document.getElementById('gh_token').value.trim(),
       repo:         document.getElementById('gh_repo').value.trim(),
       instructor:   document.getElementById('instructor').value.trim(),
+      class_time:   document.getElementById('class_time').value.trim(),
       location:     document.getElementById('location').value.trim(),
       mb_email:     document.getElementById('mb_email').value.trim(),
       mb_studio_id: document.getElementById('mb_studio_id').value.trim(),
@@ -257,13 +261,14 @@
     const repo       = document.getElementById('gh_repo').value.trim();
     const instructor = document.getElementById('instructor').value.trim();
     const classDate  = document.getElementById('class_date').value.trim();
+    const classTime  = document.getElementById('class_time').value.trim();
     const location   = document.getElementById('location').value.trim();
     const runAt      = document.getElementById('run_at').value;
     const mbEmail    = document.getElementById('mb_email').value.trim();
     const mbPassword = document.getElementById('mb_password').value;
     const mbStudioId = document.getElementById('mb_studio_id').value.trim();
 
-    if (!token || !repo || !instructor || !classDate || !runAt) {
+    if (!token || !repo || !instructor || !classDate || !classTime || !runAt) {
       showStatus('err', 'Kérlek tölts ki minden mezőt!'); return;
     }
     if (!mbEmail || !mbPassword || !mbStudioId) {
@@ -282,7 +287,7 @@
     try {
       // 1. schedule.json mentése a repóba (csak az óra adatai, NEM a jelszó)
       const scheduleData = {
-        instructor, class_date: classDate, location, run_at: runAtISO
+        instructor, class_date: classDate, class_time: classTime, location, run_at: runAtISO
       };
       await saveFile(owner, repoName, token, 'schedule.json', scheduleData,
         `Foglalás ütemezve: ${classDate} – ${instructor}`);
@@ -307,7 +312,7 @@
 
         const dt = new Date(runAt);
         showStatus('ok',
-          `✅ Sikeresen ütemezve!\n\nEdző: ${instructor}\nEdzés dátuma: ${classDate}\nFoglalás indul: ${dt.toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}\n\nA watcher elindult és figyel.`
+          `✅ Sikeresen ütemezve!\n\nEdző: ${instructor}\nEdzés dátuma: ${classDate} ${classTime}\nFoglalás indul: ${dt.toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}\n\nA watcher elindult és figyel.`
         );
       } else {
         const e = await dispatchRes.json().catch(() => ({}));
