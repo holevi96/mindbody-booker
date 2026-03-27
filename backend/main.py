@@ -105,7 +105,7 @@ async def _trigger_due():
     try:
         rows = await asyncio.to_thread(
             lambda: db.table("bookings")
-                .select("*, user_credentials(mb_email, mb_password_encrypted, studio_id)")
+                .select("*")
                 .eq("status", "pending")
                 .lte("run_at", now)
                 .execute()
@@ -117,7 +117,16 @@ async def _trigger_due():
     for b in rows.data:
         bid = b["id"]
         try:
-            run_id = await trigger_book(b, b["user_credentials"])
+            creds_r = await asyncio.to_thread(
+                lambda: db.table("user_credentials")
+                    .select("mb_email, mb_password_encrypted, studio_id")
+                    .eq("id", b["user_id"])
+                    .execute()
+            )
+            if not creds_r.data:
+                log.error("Booking %s: no credentials found for user %s", bid, b["user_id"])
+                continue
+            run_id = await trigger_book(b, creds_r.data[0])
             await asyncio.to_thread(
                 lambda: db.table("bookings")
                     .update({"status": "running", "gh_run_id": run_id})
