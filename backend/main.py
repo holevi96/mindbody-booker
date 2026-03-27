@@ -11,7 +11,6 @@ from cryptography.fernet import Fernet
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 from pydantic import BaseModel
 from supabase import Client, create_client
 
@@ -21,7 +20,6 @@ log = logging.getLogger(__name__)
 # ── Config ─────────────────────────────────────────────────────────────────────
 SUPABASE_URL         = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
-SUPABASE_JWT_SECRET  = os.environ["SUPABASE_JWT_SECRET"]
 ENCRYPTION_KEY       = os.environ["ENCRYPTION_KEY"]   # generate: Fernet.generate_key()
 GITHUB_TOKEN         = os.environ["GITHUB_TOKEN"]
 GITHUB_REPO          = os.environ["GITHUB_REPO"]       # e.g. "holevi96/mindbody-booker"
@@ -42,13 +40,12 @@ bearer = HTTPBearer()
 
 async def get_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
     try:
-        return jwt.decode(
-            creds.credentials,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-    except JWTError:
+        resp = await asyncio.to_thread(lambda: db.auth.get_user(creds.credentials))
+        u = resp.user
+        if not u:
+            raise ValueError("no user")
+        return {"sub": u.id, "email": u.email}
+    except Exception:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
 
 # ── GitHub Actions ─────────────────────────────────────────────────────────────
