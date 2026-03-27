@@ -172,7 +172,8 @@ def book(page) -> bool:
             timeout=10_000
         )
     except PWTimeout:
-        log.error("Foglalás gomb nem jelent meg!")
+        page.screenshot(path="debug_timeout.png")
+        log.error("Foglalás gomb nem jelent meg! Screenshot: debug_timeout.png")
         return False
 
     # Megvizsgáljuk hogy betelt-e az óra (várólista eset)
