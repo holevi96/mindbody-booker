@@ -13,7 +13,7 @@ STUDIO_ID  = os.environ["MB_STUDIO_ID"]   # 48016
 EMAIL      = os.environ["MB_EMAIL"]
 PASSWD     = os.environ["MB_PASSWORD"]
 INSTR      = os.environ["MB_INSTRUCTOR"]  # pl. "Ujvári Cili"
-CLASS      = os.environ["MB_CLASS"]       # pl. "TRX köredzés"
+CLASS      = os.environ.get("MB_CLASS", "")
 DATE       = os.environ["MB_CLASS_DATE"]  # pl. "3/25/2026"
 LOC        = os.environ.get("MB_LOCATION", "2")
 TG         = os.environ.get("MB_TG", "23")
@@ -138,7 +138,9 @@ def find_and_click(page) -> bool:
             continue
 
         text = child.inner_text()
-        if INSTR not in text or CLASS not in text:
+        if INSTR not in text:
+            continue
+        if CLASS and CLASS not in text:
             continue
 
         log.info("Óra megtalálva (dátum: %s): %s", current_date, text[:80].replace("\n", " "))

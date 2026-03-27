@@ -40,11 +40,10 @@ jobs:
 
           RUN_AT=$(jq -r '.run_at' schedule.json)
           INSTRUCTOR=$(jq -r '.instructor' schedule.json)
-          CLASS_NAME=$(jq -r '.class_name' schedule.json)
           CLASS_DATE=$(jq -r '.class_date' schedule.json)
           LOCATION=$(jq -r '.location' schedule.json)
 
-          echo "Ütemezve: $INSTRUCTOR / $CLASS_NAME / $CLASS_DATE"
+          echo "Ütemezve: $INSTRUCTOR / $CLASS_DATE"
           echo "Foglalás időpontja: $RUN_AT"
 
           # Várakozási ciklus
@@ -63,7 +62,6 @@ jobs:
                 --repo "$REPO" \
                 --ref main \
                 --field instructor="$INSTRUCTOR" \
-                --field class_name="$CLASS_NAME" \
                 --field class_date="$CLASS_DATE" \
                 --field location="$LOCATION" \
                 --field mb_email="$MB_EMAIL" \
