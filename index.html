@@ -419,6 +419,12 @@
       .subscribe();
   }
 
+  function _esc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
   function _renderBookings(bookings) {
     const el = document.getElementById('bookings-list');
     if (!bookings.length) {
@@ -426,17 +432,18 @@
       return;
     }
     el.innerHTML = bookings.map(b => {
-      const label  = _STATUS_HU[b.status] || b.status;
+      const label  = _esc(_STATUS_HU[b.status] || b.status);
       const runAt  = new Date(b.run_at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const status = /^[a-z]+$/.test(b.status) ? b.status : 'pending';
       const cancel = b.status === 'pending'
-        ? `<button class="cancel-btn" onclick="cancelBooking('${b.id}')" title="Törlés">✕</button>` : '';
+        ? `<button class="cancel-btn" onclick="cancelBooking('${_esc(b.id)}')" title="Törlés">✕</button>` : '';
       return `<div class="booking-row">
         <div class="booking-info">
-          <strong>${b.instructor}</strong>
-          <span class="booking-meta">${b.class_date} · ${_LOC[b.location] || b.location} · ⏱ ${runAt}</span>
+          <strong>${_esc(b.instructor)}</strong>
+          <span class="booking-meta">${_esc(b.class_date)} · ${_esc(_LOC[b.location] || b.location)} · ⏱ ${_esc(runAt)}</span>
         </div>
         <div class="booking-right">
-          <span class="badge badge-${b.status}">${label}</span>${cancel}
+          <span class="badge badge-${status}">${label}</span>${cancel}
         </div>
       </div>`;
     }).join('');

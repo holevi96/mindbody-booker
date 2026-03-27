@@ -87,11 +87,11 @@ def find_and_click(page) -> bool:
     page.goto(f"{BASE}/classic/mainclass?fl=true&tabID=7", wait_until="domcontentloaded")
 
     # Dátum és helyszín beállítása
-    page.evaluate(f"""
-        document.querySelector('input[name="txtDate"]').value = '{DATE}';
-        document.querySelector('select[name="optLocation"]').value = '{LOC}';
+    page.evaluate("""([date, loc]) => {
+        document.querySelector('input[name="txtDate"]').value = date;
+        document.querySelector('select[name="optLocation"]').value = loc;
         document.querySelector('form[name="search2"]').submit();
-    """)
+    }""", [DATE, LOC])
 
     # Megvárjuk amíg a táblázat betöltődik
     try:

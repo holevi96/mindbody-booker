@@ -11,7 +11,7 @@ from cryptography.fernet import Fernet
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from supabase import Client, create_client
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -125,9 +125,9 @@ async def _trigger_due():
                 continue
             run_id = await trigger_book(b, creds_r.data[0])
             await asyncio.to_thread(
-                lambda: db.table("bookings")
-                    .update({"status": "running", "gh_run_id": run_id})
-                    .eq("id", bid)
+                lambda _bid=bid, _run_id=run_id: db.table("bookings")
+                    .update({"status": "running", "gh_run_id": _run_id})
+                    .eq("id", _bid)
                     .execute()
             )
             log.info("Booking %s triggered → GH run %s", bid, run_id)
@@ -135,9 +135,9 @@ async def _trigger_due():
             log.error("Booking %s failed to trigger: %s", bid, e)
             err = str(e)
             await asyncio.to_thread(
-                lambda: db.table("bookings")
-                    .update({"status": "failed", "error_message": err})
-                    .eq("id", bid)
+                lambda _bid=bid, _err=err: db.table("bookings")
+                    .update({"status": "failed", "error_message": _err})
+                    .eq("id", _bid)
                     .execute()
             )
 
@@ -160,7 +160,7 @@ async def _poll_running():
             s = await get_run_status(run_id)
             if s in ("success", "failed"):
                 await asyncio.to_thread(
-                    lambda: db.table("bookings").update({"status": s}).eq("id", bid).execute()
+                    lambda _bid=bid, _s=s: db.table("bookings").update({"status": _s}).eq("id", _bid).execute()
                 )
                 log.info("Booking %s → %s", bid, s)
         except Exception as e:
@@ -178,25 +178,29 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
 
 app = FastAPI(title="Mindbody Booker API", lifespan=lifespan)
+_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+if not _ALLOWED_ORIGINS:
+    _ALLOWED_ORIGINS = ["https://holevi96.github.io"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # ── Models ─────────────────────────────────────────────────────────────────────
 class CredentialsIn(BaseModel):
-    mb_email: str
-    mb_password: str
-    studio_id: str = "48016"
+    mb_email: EmailStr
+    mb_password: str = Field(min_length=1, max_length=256)
+    studio_id: str = Field(default="48016", pattern=r"^\d{3,6}$")
 
 class BookingIn(BaseModel):
-    instructor: str
-    class_date: str        # DD/MM/YYYY
-    class_time: str = ""   # HH:MM, optional — disambiguates same-instructor same-day rows
-    location: str
-    run_at: str            # ISO 8601
+    instructor: str = Field(min_length=1, max_length=100)
+    class_date: str = Field(pattern=r"^\d{2}/\d{2}/\d{4}$")
+    class_time: str = Field(default="", pattern=r"^(\d{2}:\d{2})?$")
+    location: str = Field(pattern=r"^\d{1,2}$")
+    run_at: str = Field(min_length=1)
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
 @app.get("/health")

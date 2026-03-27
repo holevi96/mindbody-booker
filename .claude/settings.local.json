@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Read(//Users/levente.horvath/.ssh/**)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(ssh-keygen:*)",
+      "Bash(ssh:*)",
+      "Bash(git remote:*)",
+      "Bash(git pull:*)",
+      "Bash(git rm:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(/Users/levente.horvath/Library/Python/3.9/bin/git-filter-repo --path config.json --invert-paths --force 2>&1)"
+    ]
+  }
+}
