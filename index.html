@@ -109,6 +109,20 @@
       transition: color 0.1s, background 0.1s;
     }
     .cancel-btn:hover { color: #b91c1c; background: #fce8e8; }
+    .badge-waitlist  { background: #fff3cd; color: #856404; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(0);
+      padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500;
+      white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      opacity: 1; transition: opacity 0.4s, transform 0.4s;
+      z-index: 1000; pointer-events: none;
+    }
+    .toast.hide { opacity: 0; transform: translateX(-50%) translateY(12px); }
+    .toast-success  { background: #1a7a38; color: #fff; }
+    .toast-waitlist { background: #856404; color: #fff; }
+    .toast-failed   { background: #b91c1c; color: #fff; }
   </style>
 </head>
 <body>
@@ -307,6 +321,7 @@
     document.getElementById('view-app').style.display   = 'block';
     document.getElementById('user-email').textContent   = email;
     buildInstructorSelect(localStorage.getItem('mb_last_instructor') || '');
+    _subscribeBookings(_session.user.id);
     await Promise.all([_loadProfile(), _loadBookings()]);
   }
 
@@ -370,7 +385,39 @@
   }
 
   const _LOC = { '2':'Corvin', '3':'Nyugati', '4':'Allee', '7':'Etele', '8':'Springday', '9':'Váci35' };
-  const _STATUS_HU = { pending:'Várakozik', running:'Folyamatban', success:'Sikeres', failed:'Sikertelen', cancelled:'Törölve' };
+  const _STATUS_HU = { pending:'Várakozik', running:'Folyamatban', success:'Sikeres', waitlist:'Várólista', failed:'Sikertelen', cancelled:'Törölve' };
+
+  // ── Toast ────────────────────────────────────────────────────────────────
+  function _showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('hide'), 3000);
+    setTimeout(() => t.remove(), 3400);
+  }
+
+  // ── Realtime subscription ────────────────────────────────────────────────
+  let _realtimeChannel = null;
+
+  function _subscribeBookings(userId) {
+    if (_realtimeChannel) sb.removeChannel(_realtimeChannel);
+    _realtimeChannel = sb.channel('bookings-' + userId)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'bookings',
+        filter: `user_id=eq.${userId}`,
+      }, payload => {
+        _loadBookings();
+        const status = payload.new?.status;
+        const instr  = payload.new?.instructor || '';
+        if (status === 'success')  _showToast(`✅ Foglalás sikeres! ${instr}`, 'success');
+        if (status === 'waitlist') _showToast(`⏳ Várólistán vagy! ${instr}`, 'waitlist');
+        if (status === 'failed')   _showToast(`❌ Foglalás sikertelen! ${instr}`, 'failed');
+      })
+      .subscribe();
+  }
 
   function _renderBookings(bookings) {
     const el = document.getElementById('bookings-list');
