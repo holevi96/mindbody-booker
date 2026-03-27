@@ -159,8 +159,14 @@ def find_and_click(page) -> bool:
 def book(page) -> bool:
     """
     A res_a oldalon rákattint a foglalás gombra és megvárja az eredményt.
+    Ha az óra betelt, megpróbál várólistára kerülni.
     """
     log.info("Foglalás gomb keresése...")
+
+    # Megvizsgáljuk hogy betelt-e az óra (várólista eset)
+    waitlist_btn = page.query_selector("input[name='AddWLButton']")
+    if waitlist_btn:
+        return _join_waitlist(page, waitlist_btn)
 
     try:
         btn = page.wait_for_selector(
@@ -175,6 +181,38 @@ def book(page) -> bool:
     with page.expect_navigation(timeout=15_000, wait_until="domcontentloaded"):
         btn.click()
 
+    return _check_booking_success(page)
+
+
+def _join_waitlist(page, btn) -> bool:
+    """Várólistára való feliratkozás kezelése."""
+    log.info("Az óra betelt – várólistára feliratkozás...")
+    try:
+        with page.expect_navigation(timeout=15_000, wait_until="domcontentloaded"):
+            btn.click()
+    except PWTimeout:
+        # addToWaitList() esetleg nem navigál, ellenőrizzük az oldalt
+        pass
+
+    url = page.url
+    content = page.content()
+    success = (
+        "waitlist" in url.lower()
+        or "WaitList" in content
+        or "várólista" in content.lower()
+        or "wait list" in content.lower()
+        or "waitlist" in content.lower()
+    )
+    log.info(
+        "Várólistára feliratkozás %s (url=%s)",
+        "SIKERES ✅" if success else "SIKERTELEN ❌", url
+    )
+    if not success:
+        log.info("Oldal tartalom (első 500 kar): %s", content[:500])
+    return success
+
+
+def _check_booking_success(page) -> bool:
     url = page.url
     content = page.content()
     success = (
