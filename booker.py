@@ -15,6 +15,7 @@ PASSWD     = os.environ["MB_PASSWORD"]
 INSTR      = os.environ["MB_INSTRUCTOR"]  # pl. "Ujvári Cili"
 CLASS      = os.environ.get("MB_CLASS", "")
 DATE       = os.environ["MB_CLASS_DATE"]  # pl. "3/25/2026"
+CLASS_TIME = os.environ.get("MB_CLASS_TIME", "")  # pl. "11:00"
 LOC        = os.environ.get("MB_LOCATION", "2")
 TG         = os.environ.get("MB_TG", "23")
 MAX_TRIES  = int(os.environ.get("MB_MAX_TRIES", "40"))
@@ -137,13 +138,23 @@ def find_and_click(page) -> bool:
         if current_date != target:
             continue
 
+        # Időpont kinyerése a .col-1 .col-first elemből (pl. "11:00\xa0 CET")
+        if CLASS_TIME:
+            time_el = child.query_selector(".col-1 .col-first")
+            row_time = ""
+            if time_el:
+                raw = time_el.inner_text().replace("\xa0", " ").strip()
+                row_time = raw.split()[0]  # "11:00"
+            if row_time != CLASS_TIME:
+                continue
+
         text = child.inner_text()
         if INSTR not in text:
             continue
         if CLASS and CLASS not in text:
             continue
 
-        log.info("Óra megtalálva (dátum: %s): %s", current_date, text[:80].replace("\n", " "))
+        log.info("Óra megtalálva (dátum: %s, idő: %s): %s", current_date, row_time if CLASS_TIME else "–", text[:80].replace("\n", " "))
 
         if not btn:
             log.info("Foglalás még nem nyílt meg.")

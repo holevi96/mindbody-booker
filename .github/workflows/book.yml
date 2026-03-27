@@ -9,6 +9,10 @@ on:
       class_date:
         description: "Dátum (pl. 25/03/2026)"
         required: true
+      class_time:
+        description: "Óra kezdete (pl. 11:00)"
+        required: false
+        default: ""
       location:
         description: "Helyszín ID"
         required: false
@@ -50,6 +54,7 @@ jobs:
           MB_STUDIO_ID:  ${{ github.event.inputs.mb_studio_id }}
           MB_INSTRUCTOR: ${{ github.event.inputs.instructor }}
           MB_CLASS_DATE: ${{ github.event.inputs.class_date }}
+          MB_CLASS_TIME: ${{ github.event.inputs.class_time }}
           MB_LOCATION:   ${{ github.event.inputs.location }}
         run: python booker.py
 
