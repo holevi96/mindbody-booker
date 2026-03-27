@@ -6,9 +6,6 @@ on:
       instructor:
         description: "Edző neve"
         required: true
-      class_name:
-        description: "Óra neve"
-        required: true
       class_date:
         description: "Dátum (pl. 25/03/2026)"
         required: true
@@ -52,7 +49,6 @@ jobs:
           MB_PASSWORD:   ${{ github.event.inputs.mb_password }}
           MB_STUDIO_ID:  ${{ github.event.inputs.mb_studio_id }}
           MB_INSTRUCTOR: ${{ github.event.inputs.instructor }}
-          MB_CLASS:      ${{ github.event.inputs.class_name }}
           MB_CLASS_DATE: ${{ github.event.inputs.class_date }}
           MB_LOCATION:   ${{ github.event.inputs.location }}
         run: python booker.py
