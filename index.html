@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mindbody Foglalás</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -86,8 +87,7 @@
     <label>Óra neve</label>
     <input type="text" id="class_name" placeholder="pl. TRX köredzés">
     <label>Edzés dátuma</label>
-    <input type="text" id="class_date" placeholder="pl. 30/03/2026">
-    <p class="hint">Formátum: nap/hónap/év</p>
+    <input type="text" id="class_date" placeholder="pl. 30/03/2026" readonly>
     <label>Helyszín</label>
     <select id="location">
       <option value="4">Life1 Allee Fitness</option>
@@ -291,6 +291,14 @@
     el.className = 'status ' + type;
     el.textContent = msg;
   }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  flatpickr('#class_date', {
+    dateFormat: 'd/m/Y',
+    minDate: 'today',
+    locale: { firstDayOfWeek: 1 },
+  });
 </script>
 </body>
 </html>
