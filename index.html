@@ -9,15 +9,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f5;
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
+      background: #f5f5f5; min-height: 100vh;
+      display: flex; align-items: flex-start; justify-content: center;
       padding: 2rem 1rem;
     }
     .container { width: 100%; max-width: 480px; }
-    h1 { font-size: 20px; font-weight: 600; margin-bottom: 1.5rem; color: #111; }
+    h1 { font-size: 20px; font-weight: 600; color: #111; }
     .card {
       background: #fff; border-radius: 12px; padding: 1.25rem;
       margin-bottom: 1rem; border: 1px solid #e5e5e5;
@@ -37,8 +34,7 @@
     select {
       width: 100%; padding: 10px 12px; border: 1px solid #ddd;
       border-radius: 8px; font-size: 15px; color: #111;
-      background: #fafafa; transition: border-color 0.15s; -webkit-appearance: none;
-      cursor: pointer;
+      background: #fafafa; transition: border-color 0.15s; -webkit-appearance: none; cursor: pointer;
     }
     select:focus { outline: none; border-color: #555; background: #fff; }
     .select-row { display: flex; gap: 8px; align-items: center; }
@@ -49,8 +45,6 @@
       flex-shrink: 0; transition: background 0.15s, border-color 0.15s;
     }
     .fav-btn:hover { background: #fff8e1; border-color: #f0c040; }
-    .hint { font-size: 12px; color: #999; margin-top: 5px; }
-    .hint a { color: #555; }
     .btn {
       width: 100%; padding: 12px; background: #111; color: #fff;
       border: none; border-radius: 8px; font-size: 16px; font-weight: 500;
@@ -65,37 +59,115 @@
       margin-top: 1rem; padding: 12px; border-radius: 8px;
       font-size: 14px; display: none; white-space: pre-line; line-height: 1.6;
     }
-    .status.ok { background: #e6f4ea; color: #1a7a38; display: block; }
-    .status.err { background: #fce8e8; color: #b91c1c; display: block; }
+    .status.ok      { background: #e6f4ea; color: #1a7a38; display: block; }
+    .status.err     { background: #fce8e8; color: #b91c1c; display: block; }
     .status.loading { background: #f0f0f0; color: #555; display: block; }
-    .settings-toggle {
-      font-size: 13px; color: #888; cursor: pointer;
-      text-decoration: underline; text-align: center;
-      margin-top: 0.5rem; display: block;
-    }
-    .settings-card { display: none; margin-top: 0.75rem; }
-    .settings-card.open { display: block; }
+    .hint { font-size: 12px; color: #999; margin-top: 5px; }
+    .time-preview { font-size: 13px; color: #555; margin-top: 6px; min-height: 18px; }
+    .divider { border: none; border-top: 1px solid #eee; margin: 1.25rem 0; }
     .saved-badge {
       display: inline-block; background: #e6f4ea; color: #1a7a38;
       font-size: 11px; padding: 2px 8px; border-radius: 20px; margin-left: 8px;
     }
-    .time-preview { font-size: 13px; color: #555; margin-top: 6px; min-height: 18px; }
-    .divider { border: none; border-top: 1px solid #eee; margin: 1.25rem 0; }
+
+    /* App header */
+    .app-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .header-actions { display: flex; align-items: center; gap: 6px; }
+    .user-email-label { font-size: 12px; color: #888; margin-right: 4px; }
+    .icon-btn {
+      background: none; border: 1px solid transparent; cursor: pointer;
+      font-size: 17px; padding: 4px 6px; border-radius: 6px;
+      transition: background 0.15s, border-color 0.15s; line-height: 1;
+    }
+    .icon-btn:hover { background: #eee; border-color: #ddd; }
+
+    /* Bookings list */
+    .booking-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .booking-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .booking-info { flex: 1; min-width: 0; }
+    .booking-info strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .booking-meta { font-size: 12px; color: #888; }
+    .booking-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .badge-pending   { background: #fff3cd; color: #856404; }
+    .badge-running   { background: #cfe2ff; color: #0a58ca; }
+    .badge-success   { background: #d1e7dd; color: #0a3622; }
+    .badge-failed    { background: #f8d7da; color: #842029; }
+    .badge-cancelled { background: #e2e3e5; color: #41464b; }
+    .cancel-btn {
+      background: none; border: none; cursor: pointer; color: #bbb;
+      font-size: 14px; padding: 2px 4px; border-radius: 4px; line-height: 1;
+      transition: color 0.1s, background 0.1s;
+    }
+    .cancel-btn:hover { color: #b91c1c; background: #fce8e8; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>🏋️ Mindbody foglalás</h1>
 
-  <!-- EDZÉS ADATAI -->
+<!-- ── LOGIN VIEW ─────────────────────────────────────────────────────────── -->
+<div id="view-login" class="container" style="display:none">
+  <h1 style="margin-bottom:1.5rem">🏋️ Mindbody foglalás</h1>
+  <div class="card">
+    <div class="card-title">Bejelentkezés</div>
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="pelda@email.com"
+           onkeydown="if(event.key==='Enter')login()">
+    <label>Jelszó</label>
+    <input type="password" id="login-password" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter')login()">
+    <button class="btn" id="loginBtn" onclick="login()">Bejelentkezés</button>
+    <div class="status" id="login-status"></div>
+    <p class="hint" style="margin-top:1rem;text-align:center">
+      Hozzáférés kéréséhez fordulj a rendszergazdához.
+    </p>
+  </div>
+</div>
+
+<!-- ── APP VIEW ──────────────────────────────────────────────────────────── -->
+<div id="view-app" class="container" style="display:none">
+
+  <div class="app-header">
+    <h1>🏋️ Mindbody</h1>
+    <div class="header-actions">
+      <span class="user-email-label" id="user-email"></span>
+      <button class="icon-btn" onclick="toggleSettings()" title="Mindbody beállítások">⚙️</button>
+      <button class="icon-btn" onclick="doLogout()" title="Kijelentkezés">↩</button>
+    </div>
+  </div>
+
+  <!-- Settings panel -->
+  <div class="card" id="settings-panel" style="display:none">
+    <div class="card-title">
+      Mindbody fiók
+      <span class="saved-badge" id="creds-badge" style="display:none">beállítva ✓</span>
+    </div>
+    <label>Email</label>
+    <input type="email" id="mb_email" placeholder="pelda@email.com">
+    <label>Jelszó</label>
+    <input type="password" id="mb_password" placeholder="••••••••">
+    <button class="btn btn-secondary" onclick="saveCredentials()">Mentés</button>
+    <div class="status" id="settings-status"></div>
+  </div>
+
+  <!-- Booking form -->
   <div class="card">
     <div class="card-title">Edzés adatai</div>
     <label>Edző neve</label>
     <div class="select-row">
       <select id="instructor"></select>
-      <button type="button" class="fav-btn" id="favBtn" onclick="saveFavourite()" title="Kedvenc beállítása">⭐</button>
+      <button type="button" class="fav-btn" id="favBtn"
+              onclick="saveFavourite()" title="Kedvenc beállítása">⭐</button>
     </div>
-<label>Edzés dátuma</label>
+    <label>Edzés dátuma</label>
     <input type="text" id="class_date" placeholder="pl. 30/03/2026" readonly>
     <label>Óra kezdete</label>
     <input type="time" id="class_time">
@@ -110,7 +182,7 @@
     </select>
   </div>
 
-  <!-- IDŐZÍTÉS -->
+  <!-- Timing -->
   <div class="card">
     <div class="card-title">Mikor induljon el a foglalás?</div>
     <label>Időpont</label>
@@ -119,43 +191,27 @@
     <p class="time-preview" id="time_preview"></p>
   </div>
 
-  <button class="btn" id="scheduleBtn" onclick="schedule()">⏰ Foglalás ütemezése</button>
+  <button class="btn" id="scheduleBtn" onclick="scheduleBooking()">⏰ Foglalás ütemezése</button>
   <div class="status" id="status"></div>
 
-  <!-- BEÁLLÍTÁSOK -->
-  <span class="settings-toggle" onclick="toggleSettings()">
-    ⚙️ Beállítások
-    <span id="settings-saved" style="display:none" class="saved-badge">mentve</span>
-  </span>
-
-  <div class="card settings-card" id="settings-card">
-    <div class="card-title">GitHub</div>
-    <label>GitHub token</label>
-    <input type="password" id="gh_token" placeholder="ghp_...">
-    <p class="hint">
-      <a href="https://github.com/settings/tokens/new" target="_blank">Létrehozás →</a>
-      &nbsp;workflow scope kell
-    </p>
-    <label>GitHub repó</label>
-    <input type="text" id="gh_repo" placeholder="felhasználónév/mindbody-booker">
-
-    <hr class="divider">
-
-    <div class="card-title">Mindbody fiók</div>
-    <label>Email</label>
-    <input type="email" id="mb_email" placeholder="pelda@email.com">
-    <label>Jelszó</label>
-    <input type="password" id="mb_password" placeholder="••••••••">
-    <label>Studio ID</label>
-    <input type="text" id="mb_studio_id" placeholder="pl. 48016">
-    <p class="hint">Az URL-ből: clients.mindbodyonline.com/...?studioid=XXXXX</p>
-
-    <button class="btn btn-secondary" onclick="saveSettings()">
-      Beállítások mentése
-    </button>
+  <!-- Bookings list -->
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">Foglalásaim</div>
+    <div id="bookings-list">
+      <p style="color:#999;font-size:14px">Nincs ütemezett foglalás.</p>
+    </div>
   </div>
+
 </div>
 
+<!-- ── Config (fill these in before deploying) ─────────────────────────── -->
+<script>
+  const SUPABASE_URL  = 'YOUR_SUPABASE_URL';       // https://xxx.supabase.co
+  const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
+  const API_URL       = 'YOUR_BACKEND_URL';         // https://xxx.railway.app
+</script>
+
+<!-- ── Instructor list + favourite ────────────────────────────────────── -->
 <script>
   const INSTRUCTORS = [
     'Ábrahám Zsanna','Adamkó Szilvi','Ajanidisz Teodóra','Andris Anita','Angyal Kyra',
@@ -188,18 +244,13 @@
     const sel = document.getElementById('instructor');
     const fav = localStorage.getItem('mb_favourite_instructor');
     sel.innerHTML = '';
-
     if (fav) {
-      const pinned = Object.assign(document.createElement('option'), { value: fav, textContent: '⭐ ' + fav });
-      sel.appendChild(pinned);
-      const sep = Object.assign(document.createElement('option'), { disabled: true, textContent: '──────────────' });
-      sel.appendChild(sep);
+      sel.appendChild(Object.assign(document.createElement('option'), { value: fav, textContent: '⭐ ' + fav }));
+      sel.appendChild(Object.assign(document.createElement('option'), { disabled: true, textContent: '──────────────' }));
     }
-
-    INSTRUCTORS.forEach(name => {
-      sel.appendChild(Object.assign(document.createElement('option'), { value: name, textContent: name }));
-    });
-
+    INSTRUCTORS.forEach(name =>
+      sel.appendChild(Object.assign(document.createElement('option'), { value: name, textContent: name }))
+    );
     sel.value = selectedName || fav || INSTRUCTORS[0];
   }
 
@@ -212,154 +263,201 @@
     btn.textContent = '★';
     setTimeout(() => { btn.textContent = '⭐'; }, 1200);
   }
+</script>
 
-  // Beállítások betöltése
-  const saved = JSON.parse(localStorage.getItem('mb_settings') || '{}');
-  if (saved.token)         document.getElementById('gh_token').value      = saved.token;
-  if (saved.repo)          document.getElementById('gh_repo').value        = saved.repo;
-  buildInstructorSelect(saved.instructor || '');
-  if (saved.class_time)    document.getElementById('class_time').value     = saved.class_time;
-  if (saved.location)      document.getElementById('location').value       = saved.location;
-  if (saved.mb_email)      document.getElementById('mb_email').value       = saved.mb_email;
-  if (saved.mb_studio_id)  document.getElementById('mb_studio_id').value   = saved.mb_studio_id;
-  if (saved.token || saved.repo)
-    document.getElementById('settings-saved').style.display = 'inline-block';
+<!-- ── Supabase + Flatpickr ───────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  document.getElementById('run_at').addEventListener('input', updatePreview);
-  function updatePreview() {
-    const val = document.getElementById('run_at').value;
-    const el  = document.getElementById('time_preview');
-    if (!val) { el.textContent = ''; return; }
-    const dt = new Date(val);
-    el.textContent = dt.toLocaleString('hu-HU', {
-      year: 'numeric', month: 'long', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
+<!-- ── App logic ─────────────────────────────────────────────────────── -->
+<script>
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  let _session = null;
+
+  // ── Auth state ──────────────────────────────────────────────────────────
+  sb.auth.onAuthStateChange(async (event, session) => {
+    _session = session;
+    if (session) {
+      await _showApp(session.user.email);
+    } else {
+      _showLogin();
+    }
+  });
+
+  async function login() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    document.getElementById('loginBtn').disabled = true;
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    document.getElementById('loginBtn').disabled = false;
+    if (error) _setStatus('login-status', 'err', error.message);
+  }
+
+  async function doLogout() {
+    await sb.auth.signOut();
+  }
+
+  function _showLogin() {
+    document.getElementById('view-login').style.display = 'block';
+    document.getElementById('view-app').style.display   = 'none';
+  }
+
+  async function _showApp(email) {
+    document.getElementById('view-login').style.display = 'none';
+    document.getElementById('view-app').style.display   = 'block';
+    document.getElementById('user-email').textContent   = email;
+    buildInstructorSelect(localStorage.getItem('mb_last_instructor') || '');
+    await Promise.all([_loadProfile(), _loadBookings()]);
+  }
+
+  // ── API helper ──────────────────────────────────────────────────────────
+  async function _api(method, path, body = null) {
+    const token = _session?.access_token;
+    const opts = {
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetch(`${API_URL}${path}`, opts);
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || `Szerverhiba: ${resp.status}`);
+    }
+    if (resp.status === 204) return null;
+    return resp.json();
+  }
+
+  // ── Profile / credentials ───────────────────────────────────────────────
+  async function _loadProfile() {
+    try {
+      const p = await _api('GET', '/users/me');
+      if (p.mb_email) {
+        document.getElementById('mb_email').value = p.mb_email;
+        document.getElementById('creds-badge').style.display = 'inline-block';
+      }
+    } catch (_) { /* not yet configured */ }
+  }
+
+  async function saveCredentials() {
+    const mb_email    = document.getElementById('mb_email').value.trim();
+    const mb_password = document.getElementById('mb_password').value;
+    if (!mb_email || !mb_password) {
+      _setStatus('settings-status', 'err', 'Töltsd ki mindkét mezőt!'); return;
+    }
+    try {
+      await _api('PUT', '/users/me/credentials', { mb_email, mb_password });
+      document.getElementById('creds-badge').style.display = 'inline-block';
+      _setStatus('settings-status', 'ok', 'Mentve!');
+    } catch(e) {
+      _setStatus('settings-status', 'err', e.message);
+    }
   }
 
   function toggleSettings() {
-    document.getElementById('settings-card').classList.toggle('open');
+    const p = document.getElementById('settings-panel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
   }
 
-  function saveSettings() {
-    const s = {
-      token:        document.getElementById('gh_token').value.trim(),
-      repo:         document.getElementById('gh_repo').value.trim(),
-      instructor:   document.getElementById('instructor').value.trim(),
-      class_time:   document.getElementById('class_time').value.trim(),
-      location:     document.getElementById('location').value.trim(),
-      mb_email:     document.getElementById('mb_email').value.trim(),
-      mb_studio_id: document.getElementById('mb_studio_id').value.trim(),
-    };
-    localStorage.setItem('mb_settings', JSON.stringify(s));
-    document.getElementById('settings-saved').style.display = 'inline-block';
-    showStatus('ok', 'Beállítások mentve!');
+  // ── Bookings ────────────────────────────────────────────────────────────
+  async function _loadBookings() {
+    try {
+      const bookings = await _api('GET', '/bookings');
+      _renderBookings(bookings);
+    } catch (_) { /* ignore */ }
   }
 
-  async function schedule() {
-    const token      = document.getElementById('gh_token').value.trim();
-    const repo       = document.getElementById('gh_repo').value.trim();
+  const _LOC = { '2':'Corvin', '3':'Nyugati', '4':'Allee', '7':'Etele', '8':'Springday', '9':'Váci35' };
+  const _STATUS_HU = { pending:'Várakozik', running:'Folyamatban', success:'Sikeres', failed:'Sikertelen', cancelled:'Törölve' };
+
+  function _renderBookings(bookings) {
+    const el = document.getElementById('bookings-list');
+    if (!bookings.length) {
+      el.innerHTML = '<p style="color:#999;font-size:14px">Nincs ütemezett foglalás.</p>';
+      return;
+    }
+    el.innerHTML = bookings.map(b => {
+      const label  = _STATUS_HU[b.status] || b.status;
+      const runAt  = new Date(b.run_at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const cancel = b.status === 'pending'
+        ? `<button class="cancel-btn" onclick="cancelBooking('${b.id}')" title="Törlés">✕</button>` : '';
+      return `<div class="booking-row">
+        <div class="booking-info">
+          <strong>${b.instructor}</strong>
+          <span class="booking-meta">${b.class_date} · ${_LOC[b.location] || b.location} · ⏱ ${runAt}</span>
+        </div>
+        <div class="booking-right">
+          <span class="badge badge-${b.status}">${label}</span>${cancel}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function cancelBooking(id) {
+    try {
+      await _api('DELETE', `/bookings/${id}`);
+      await _loadBookings();
+    } catch(e) {
+      alert(e.message);
+    }
+  }
+
+  async function scheduleBooking() {
     const instructor = document.getElementById('instructor').value.trim();
     const classDate  = document.getElementById('class_date').value.trim();
     const classTime  = document.getElementById('class_time').value.trim();
-    const location   = document.getElementById('location').value.trim();
+    const location   = document.getElementById('location').value;
     const runAt      = document.getElementById('run_at').value;
-    const mbEmail    = document.getElementById('mb_email').value.trim();
-    const mbPassword = document.getElementById('mb_password').value;
-    const mbStudioId = document.getElementById('mb_studio_id').value.trim();
 
-    if (!token || !repo || !instructor || !classDate || !classTime || !runAt) {
-      showStatus('err', 'Kérlek tölts ki minden mezőt!'); return;
-    }
-    if (!mbEmail || !mbPassword || !mbStudioId) {
-      showStatus('err', 'Add meg a Mindbody fiók adatait a Beállításokban!'); return;
+    if (!instructor || !classDate || !classTime || !runAt) {
+      _setStatus('status', 'err', 'Kérlek tölts ki minden mezőt!'); return;
     }
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(classDate)) {
-      showStatus('err', 'A dátum formátuma: nap/hónap/év — pl. 30/03/2026'); return;
+      _setStatus('status', 'err', 'A dátum formátuma: nap/hónap/év — pl. 30/03/2026'); return;
     }
 
-    showStatus('loading', 'Ütemezés folyamatban...');
     document.getElementById('scheduleBtn').disabled = true;
-
-    const [owner, repoName] = repo.split('/');
-    const runAtISO = new Date(runAt).toISOString();
+    _setStatus('status', 'loading', 'Ütemezés folyamatban...');
 
     try {
-      // 1. schedule.json mentése a repóba (csak az óra adatai, NEM a jelszó)
-      const scheduleData = {
-        instructor, class_date: classDate, class_time: classTime, location, run_at: runAtISO
-      };
-      await saveFile(owner, repoName, token, 'schedule.json', scheduleData,
-        `Foglalás ütemezve: ${classDate} – ${instructor}`);
-
-      // 2. Watcher elindítása – jelszó paraméterként megy, nem fájlba
-      const dispatchRes = await ghFetch(
-        `repos/${owner}/${repoName}/actions/workflows/watcher.yml/dispatches`,
-        token, 'POST', {
-          ref: 'main',
-          inputs: {
-            mb_email:     mbEmail,
-            mb_password:  mbPassword,
-            mb_studio_id: mbStudioId,
-          }
-        }
+      await _api('POST', '/bookings', {
+        instructor,
+        class_date: classDate,
+        class_time: classTime,
+        location,
+        run_at: new Date(runAt).toISOString(),
+      });
+      localStorage.setItem('mb_last_instructor', instructor);
+      const dt = new Date(runAt);
+      _setStatus('status', 'ok',
+        `✅ Sikeresen ütemezve!\n\nEdző: ${instructor}\nEdzés dátuma: ${classDate} ${classTime}\nFoglalás indul: ${dt.toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
       );
-
-      if (dispatchRes.status === 204) {
-        const s = JSON.parse(localStorage.getItem('mb_settings') || '{}');
-        Object.assign(s, { instructor, location, mb_email: mbEmail, mb_studio_id: mbStudioId });
-        localStorage.setItem('mb_settings', JSON.stringify(s));
-
-        const dt = new Date(runAt);
-        showStatus('ok',
-          `✅ Sikeresen ütemezve!\n\nEdző: ${instructor}\nEdzés dátuma: ${classDate} ${classTime}\nFoglalás indul: ${dt.toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}\n\nA watcher elindult és figyel.`
-        );
-      } else {
-        const e = await dispatchRes.json().catch(() => ({}));
-        showStatus('err', `Watcher indítási hiba (${dispatchRes.status}): ${e.message || 'Ellenőrizd a tokent!'}`);
-      }
+      await _loadBookings();
     } catch(e) {
-      showStatus('err', `Hiba: ${e.message}`);
+      _setStatus('status', 'err', e.message);
     } finally {
       document.getElementById('scheduleBtn').disabled = false;
     }
   }
 
-  async function saveFile(owner, repo, token, filename, data, message) {
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-    let sha = null;
-    const getRes = await ghFetch(`repos/${owner}/${repo}/contents/${filename}`, token);
-    if (getRes.ok) sha = (await getRes.json()).sha;
-    const body = { message, content };
-    if (sha) body.sha = sha;
-    const putRes = await ghFetch(`repos/${owner}/${repo}/contents/${filename}`, token, 'PUT', body);
-    if (!putRes.ok) {
-      const e = await putRes.json();
-      throw new Error(`${filename} mentési hiba: ${e.message}`);
-    }
-  }
-
-  function ghFetch(path, token, method = 'GET', body = null) {
-    const opts = {
-      method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-      }
-    };
-    if (body) opts.body = JSON.stringify(body);
-    return fetch(`https://api.github.com/${path}`, opts);
-  }
-
-  function showStatus(type, msg) {
-    const el = document.getElementById('status');
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function _setStatus(id, type, msg) {
+    const el = document.getElementById(id);
     el.className = 'status ' + type;
     el.textContent = msg;
   }
-</script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script>
+
+  document.getElementById('run_at').addEventListener('input', () => {
+    const val = document.getElementById('run_at').value;
+    const el  = document.getElementById('time_preview');
+    if (!val) { el.textContent = ''; return; }
+    el.textContent = new Date(val).toLocaleString('hu-HU', {
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  });
+
   flatpickr('#class_date', {
     dateFormat: 'd/m/Y',
     minDate: 'today',
