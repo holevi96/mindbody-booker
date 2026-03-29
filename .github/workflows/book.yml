@@ -47,6 +47,9 @@ jobs:
           playwright install chromium
           playwright install-deps chromium
 
+      - name: Jelszó maszkolása
+        run: echo "::add-mask::${{ github.event.inputs.mb_password }}"
+
       - name: Futtatás
         env:
           MB_EMAIL:      ${{ github.event.inputs.mb_email }}
